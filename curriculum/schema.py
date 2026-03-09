@@ -6,9 +6,14 @@ from curriculum.models import Exam, ExamQuestion, Exercise, Question, Topic
 
 
 class TopicType(DjangoObjectType):
+    question_count = graphene.Int()
+
     class Meta:
         model = Topic
         fields = ("id", "name", "description", "created_at", "updated_at")
+
+    def resolve_question_count(self, info):
+        return self.questions.count()
 
 
 class QuestionType(DjangoObjectType):
@@ -135,6 +140,51 @@ class SubmitExamAnswer(graphene.Mutation):
         return SubmitExamAnswer(exam_question=exam_question)
 
 
+class CreateTopic(graphene.Mutation):
+    class Arguments:
+        name = graphene.String(required=True)
+        description = graphene.String()
+
+    topic = graphene.Field(TopicType)
+
+    @login_required
+    def mutate(self, info, name, description=""):
+        topic = Topic.objects.create(name=name, description=description)
+        return CreateTopic(topic=topic)
+
+
+class DeleteTopic(graphene.Mutation):
+    class Arguments:
+        topic_id = graphene.ID(required=True)
+
+    ok = graphene.Boolean()
+
+    @login_required
+    def mutate(self, info, topic_id):
+        Topic.objects.filter(id=topic_id).delete()
+        return DeleteTopic(ok=True)
+
+
+class CreateQuestion(graphene.Mutation):
+    class Arguments:
+        topic_id = graphene.ID(required=True)
+        text = graphene.String(required=True)
+        proficiency_level = graphene.String()
+
+    question = graphene.Field(QuestionType)
+
+    @login_required
+    def mutate(self, info, topic_id, text, proficiency_level=""):
+        topic = Topic.objects.get(id=topic_id)
+        question = Question.objects.create(
+            topic=topic, text=text, proficiency_level=proficiency_level
+        )
+        return CreateQuestion(question=question)
+
+
 class Mutation(graphene.ObjectType):
     complete_exercise = CompleteExercise.Field()
     submit_exam_answer = SubmitExamAnswer.Field()
+    create_topic = CreateTopic.Field()
+    delete_topic = DeleteTopic.Field()
+    create_question = CreateQuestion.Field()

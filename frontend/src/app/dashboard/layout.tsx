@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/practice", label: "Practice" },
   { href: "/progress", label: "Progress" },
+  { href: "/dashboard/topics", label: "Manage Topics" },
 ];
 
 export default function DashboardLayout({
