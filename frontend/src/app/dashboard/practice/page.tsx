@@ -7,13 +7,15 @@ import Link from "next/link";
 
 export default function PracticePage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, loading } = useQuery<any>(GET_TOPICS);
+  const { data, loading, error } = useQuery<any>(GET_TOPICS);
   const topics = data?.topics ?? [];
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">Choose a Topic</h1>
-      {loading ? (
+      {error ? (
+        <p className="text-sm text-red-600">Error: {error.message}</p>
+      ) : loading ? (
         <p className="text-sm text-gray-500">Loading topics...</p>
       ) : topics.length === 0 ? (
         <p className="text-sm text-gray-500">No topics available yet.</p>

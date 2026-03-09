@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -112,6 +113,7 @@ AUTHENTICATION_BACKENDS = [
 GRAPHQL_JWT = {
     "JWT_VERIFY_EXPIRATION": True,
     "JWT_LONG_RUNNING_REFRESH_TOKEN": True,
+    "JWT_EXPIRATION_DELTA": timedelta(days=7),
 }
 
 # Celery
@@ -121,6 +123,8 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "UTC"
+CELERY_TASK_ALWAYS_EAGER = os.environ.get("CELERY_TASK_ALWAYS_EAGER", "True").lower() in ("true", "1")
+CELERY_TASK_EAGER_PROPAGATES = True
 
 # File storage (default: local; set USE_S3=True for AWS S3)
 if os.environ.get("USE_S3", "False").lower() in ("true", "1"):

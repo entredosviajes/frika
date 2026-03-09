@@ -78,11 +78,9 @@ class Query(graphene.ObjectType):
     my_exams = graphene.List(ExamType)
     exam = graphene.Field(ExamType, exam_id=graphene.ID(required=True))
 
-    @login_required
     def resolve_topics(self, info):
         return Topic.objects.all()
 
-    @login_required
     def resolve_questions(self, info, topic_id=None):
         qs = Question.objects.select_related("topic")
         if topic_id:

@@ -18,7 +18,7 @@ export const GET_MY_SUBMISSIONS = gql`
 `;
 
 export const GET_SUBMISSION_ANALYSIS = gql`
-  query GetSubmissionAnalysis($submissionId: Int!) {
+  query GetSubmissionAnalysis($submissionId: ID!) {
     submissionAnalysis(submissionId: $submissionId) {
       id
       rawTranscript

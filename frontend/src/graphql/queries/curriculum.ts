@@ -12,7 +12,7 @@ export const GET_TOPICS = gql`
 `;
 
 export const GET_QUESTIONS = gql`
-  query GetQuestions($topicId: Int!) {
+  query GetQuestions($topicId: ID!) {
     questions(topicId: $topicId) {
       id
       text
@@ -48,7 +48,7 @@ export const GET_MY_EXAMS = gql`
 `;
 
 export const GET_EXAM = gql`
-  query GetExam($examId: Int!) {
+  query GetExam($examId: ID!) {
     exam(examId: $examId) {
       id
       startDate

@@ -42,25 +42,31 @@ class GeneratePresignedUrl(graphene.Mutation):
 
     @login_required
     def mutate(self, info, filename, content_type):
-        import boto3
-
         ext = os.path.splitext(filename)[1]
         key = f"submissions/audio/{uuid.uuid4().hex}{ext}"
 
-        bucket = os.environ.get("AWS_STORAGE_BUCKET_NAME", "")
-        region = os.environ.get("AWS_S3_REGION_NAME", "us-east-1")
+        use_s3 = os.environ.get("USE_S3", "False").lower() in ("true", "1")
 
-        s3_client = boto3.client("s3", region_name=region)
-        presigned_url = s3_client.generate_presigned_url(
-            "put_object",
-            Params={
-                "Bucket": bucket,
-                "Key": key,
-                "ContentType": content_type,
-            },
-            ExpiresIn=3600,
-        )
-        return GeneratePresignedUrl(url=presigned_url, key=key)
+        if use_s3:
+            import boto3
+
+            bucket = os.environ.get("AWS_STORAGE_BUCKET_NAME", "")
+            region = os.environ.get("AWS_S3_REGION_NAME", "us-east-1")
+            s3_client = boto3.client("s3", region_name=region)
+            presigned_url = s3_client.generate_presigned_url(
+                "put_object",
+                Params={
+                    "Bucket": bucket,
+                    "Key": key,
+                    "ContentType": content_type,
+                },
+                ExpiresIn=3600,
+            )
+            return GeneratePresignedUrl(url=presigned_url, key=key)
+        else:
+            # Local development: return a local upload endpoint
+            upload_url = f"http://localhost:8000/upload/{key}"
+            return GeneratePresignedUrl(url=upload_url, key=key)
 
 
 class CreateSubmission(graphene.Mutation):
