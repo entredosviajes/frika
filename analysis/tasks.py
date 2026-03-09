@@ -80,7 +80,7 @@ def process_submission_task(self, submission_id: int):
         submission.save(update_fields=["status"])
 
     except Exception as exc:
-        logger.exception("Failed to process submission %s", submission_id)
-        submission.status = DailySubmission.Status.RETRYING
+        logger.exception("Failed to process submission %s: %s", submission_id, exc)
+        submission.status = DailySubmission.Status.FAILED
         submission.save(update_fields=["status"])
-        raise self.retry(exc=exc)
+        raise exc

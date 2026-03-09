@@ -32,7 +32,7 @@ def transcribe_audio(audio_path: str) -> str:
         audio_data = f.read()
 
     response = client.models.generate_content(
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash",
         contents=[
             {
                 "parts": [
@@ -113,7 +113,7 @@ Analyze this transcript and return a JSON object with:
 Return ONLY valid JSON, no markdown fences."""
 
     response = client.models.generate_content(
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash",
         contents=prompt,
     )
 
@@ -147,7 +147,7 @@ Transcript:
 Return ONLY the rewritten text, nothing else."""
 
     response = client.models.generate_content(
-        model="gemini-2.0-pro",
+        model="gemini-2.5-pro",
         contents=prompt,
     )
 
