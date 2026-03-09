@@ -1,11 +1,10 @@
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import path
+from django.views.decorators.csrf import csrf_exempt
+
+from graphene_django.views import GraphQLView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("api/users/", include("users.urls")),
-    path("api/curriculum/", include("curriculum.urls")),
-    path("api/submissions/", include("submissions.urls")),
-    path("api/analysis/", include("analysis.urls")),
-    path("api/progress/", include("progress.urls")),
+    path("graphql", csrf_exempt(GraphQLView.as_view(graphiql=True))),
 ]
