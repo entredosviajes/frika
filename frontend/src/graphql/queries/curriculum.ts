@@ -1,0 +1,67 @@
+import { gql } from "@apollo/client";
+
+export const GET_TOPICS = gql`
+  query GetTopics {
+    topics {
+      id
+      name
+      description
+    }
+  }
+`;
+
+export const GET_QUESTIONS = gql`
+  query GetQuestions($topicId: Int!) {
+    questions(topicId: $topicId) {
+      id
+      text
+      topic {
+        name
+      }
+      proficiencyLevel
+    }
+  }
+`;
+
+export const GET_MY_EXERCISES = gql`
+  query GetMyExercises($dueDate: String) {
+    myExercises(dueDate: $dueDate) {
+      id
+      type
+      content
+      isCompleted
+      dueDate
+    }
+  }
+`;
+
+export const GET_MY_EXAMS = gql`
+  query GetMyExams {
+    myExams {
+      id
+      startDate
+      endDate
+      score
+    }
+  }
+`;
+
+export const GET_EXAM = gql`
+  query GetExam($examId: Int!) {
+    exam(examId: $examId) {
+      id
+      startDate
+      endDate
+      score
+      examquestionSet {
+        id
+        question {
+          text
+        }
+        userAnswer
+        score
+        order
+      }
+    }
+  }
+`;
