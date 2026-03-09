@@ -7,8 +7,8 @@ import { useAuth } from "@/hooks/useAuth";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/practice", label: "Practice" },
-  { href: "/progress", label: "Progress" },
+  { href: "/dashboard/practice", label: "Practice" },
+  { href: "/dashboard/progress", label: "Progress" },
   { href: "/dashboard/topics", label: "Manage Topics" },
 ];
 
@@ -44,7 +44,7 @@ export default function DashboardLayout({
               key={item.href}
               href={item.href}
               className={`block rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                pathname === item.href
+                pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))
                   ? "bg-indigo-50 text-indigo-700"
                   : "text-gray-600 hover:bg-gray-100"
               }`}

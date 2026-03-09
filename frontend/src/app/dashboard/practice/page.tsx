@@ -20,7 +20,7 @@ export default function PracticePage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {topics.map((topic: { id: string; name: string; description: string }) => (
-            <Link key={topic.id} href={`/practice/${topic.id}`}>
+            <Link key={topic.id} href={`/dashboard/practice/${topic.id}`}>
               <Card className="h-full transition-shadow hover:shadow-md">
                 <h3 className="text-lg font-semibold text-gray-900">
                   {topic.name}

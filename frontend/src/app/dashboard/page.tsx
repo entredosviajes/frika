@@ -91,7 +91,7 @@ export default function DashboardPage() {
                   }) => (
                     <li key={sub.id}>
                       <Link
-                        href={`/feedback/${sub.id}`}
+                        href={`/dashboard/feedback/${sub.id}`}
                         className="flex items-center justify-between rounded-md border border-gray-100 px-3 py-2 hover:bg-gray-50"
                       >
                         <span className="text-sm text-gray-700">
@@ -122,7 +122,7 @@ export default function DashboardPage() {
 
       <div className="flex gap-4">
         <Link
-          href="/practice"
+          href="/dashboard/practice"
           className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
         >
           Start Practicing

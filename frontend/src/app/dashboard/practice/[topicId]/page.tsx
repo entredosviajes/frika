@@ -20,7 +20,7 @@ export default function RecordingStudioPage() {
   const question = questions[0]; // serve the first question for now
 
   const handleSubmissionCreated = (submissionId: string) => {
-    router.push(`/feedback/${submissionId}`);
+    router.push(`/dashboard/feedback/${submissionId}`);
   };
 
   if (loading) {
