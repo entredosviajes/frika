@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 def process_submission_task(self, submission_id: int):
     """Process an audio submission: transcribe, analyze, and save results."""
     from analysis.models import Mistake, SubmissionAnalysis
-    from analysis.services import analyze_transcript, transcribe_audio
+    from analysis.services import analyze_transcript, rewrite_native, transcribe_audio
     from progress.models import WeaknessTracker
     from submissions.models import DailySubmission
 
@@ -25,7 +25,7 @@ def process_submission_task(self, submission_id: int):
         # Step 1: Transcribe
         transcript = transcribe_audio(submission.audio_file.path)
 
-        # Step 2: Analyze with Claude
+        # Step 2: Analyze with Gemini Flash (grammar, mistakes, basic feedback)
         profile = submission.user.profile
         result = analyze_transcript(
             transcript=transcript,
@@ -33,11 +33,17 @@ def process_submission_task(self, submission_id: int):
             proficiency_level=profile.proficiency_level,
         )
 
-        # Step 3: Save analysis
+        # Step 3: Rewrite with Gemini Pro (native C2-level rewrite)
+        rewritten = rewrite_native(
+            transcript=transcript,
+            target_language=profile.target_language,
+        )
+
+        # Step 4: Save analysis
         analysis = SubmissionAnalysis.objects.create(
             submission=submission,
             raw_transcript=transcript,
-            rewritten_version=result.get("rewritten_version", ""),
+            rewritten_version=rewritten,
             general_feedback=result.get("general_feedback", ""),
         )
 

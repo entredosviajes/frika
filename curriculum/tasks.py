@@ -1,7 +1,6 @@
 import json
 import logging
 
-import anthropic
 from celery import shared_task
 from django.conf import settings
 from django.utils import timezone
@@ -11,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 @shared_task
 def generate_weekly_exam(user_id: int):
-    """Generate a weekly exam based on the user's top weaknesses."""
+    """Generate a weekly exam based on the user's top weaknesses using Gemini Pro."""
     from curriculum.models import Exam, ExamQuestion, Question, Topic
     from progress.models import WeaknessTracker
     from users.models import User
@@ -28,7 +27,9 @@ def generate_weekly_exam(user_id: int):
     if not top_weaknesses:
         return
 
-    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+    from google import genai
+
+    client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
     prompt = f"""Generate 10 quiz questions for a {profile.target_language} learner at {profile.proficiency_level} level.
 Focus on these weak areas: {', '.join(top_weaknesses)}.
@@ -39,16 +40,15 @@ Return a JSON array of objects with:
 
 Return ONLY valid JSON, no markdown fences."""
 
-    message = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=2048,
-        messages=[{"role": "user", "content": prompt}],
+    response = client.models.generate_content(
+        model="gemini-2.0-pro",
+        contents=prompt,
     )
 
     try:
-        questions_data = json.loads(message.content[0].text)
+        questions_data = json.loads(response.text)
     except (json.JSONDecodeError, IndexError):
-        logger.error("Failed to parse exam questions from Claude")
+        logger.error("Failed to parse exam questions from Gemini Pro")
         return
 
     now = timezone.now()

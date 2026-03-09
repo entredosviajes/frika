@@ -7,11 +7,17 @@ logger = logging.getLogger(__name__)
 
 
 def _use_mock():
-    return not settings.OPENAI_API_KEY and not settings.ANTHROPIC_API_KEY
+    return not settings.GEMINI_API_KEY
+
+
+def _get_gemini_client():
+    from google import genai
+
+    return genai.Client(api_key=settings.GEMINI_API_KEY)
 
 
 def transcribe_audio(audio_path: str) -> str:
-    """Transcribe audio file using OpenAI Whisper API."""
+    """Transcribe audio file using Gemini Flash (native audio ingestion)."""
     if _use_mock():
         logger.info("Mock mode: returning fake transcript for %s", audio_path)
         return (
@@ -20,19 +26,28 @@ def transcribe_audio(audio_path: str) -> str:
             "I think that learning languages is very importance for my career."
         )
 
-    import openai
+    client = _get_gemini_client()
 
-    client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
-    with open(audio_path, "rb") as audio_file:
-        transcript = client.audio.transcriptions.create(
-            model="whisper-1",
-            file=audio_file,
-        )
-    return transcript.text
+    with open(audio_path, "rb") as f:
+        audio_data = f.read()
+
+    response = client.models.generate_content(
+        model="gemini-2.0-flash",
+        contents=[
+            {
+                "parts": [
+                    {"inline_data": {"mime_type": "audio/webm", "data": audio_data}},
+                    {"text": "Transcribe this audio recording exactly as spoken. Return only the transcription text, nothing else."},
+                ]
+            }
+        ],
+    )
+
+    return response.text.strip()
 
 
 def analyze_transcript(transcript: str, target_language: str, proficiency_level: str) -> dict:
-    """Analyze a transcript using Claude for linguistic feedback.
+    """Analyze a transcript using Gemini Flash for grammar/mistakes.
 
     Returns a dict with keys:
         - rewritten_version: str
@@ -77,9 +92,7 @@ def analyze_transcript(transcript: str, target_language: str, proficiency_level:
             ],
         }
 
-    import anthropic
-
-    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+    client = _get_gemini_client()
 
     prompt = f"""You are an expert {target_language} language coach. A student at {proficiency_level} level recorded themselves speaking. Here is their transcript:
 
@@ -99,14 +112,43 @@ Analyze this transcript and return a JSON object with:
 
 Return ONLY valid JSON, no markdown fences."""
 
-    message = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=2048,
-        messages=[{"role": "user", "content": prompt}],
+    response = client.models.generate_content(
+        model="gemini-2.0-flash",
+        contents=prompt,
     )
 
     try:
-        return json.loads(message.content[0].text)
-    except (json.JSONDecodeError, IndexError):
-        logger.error("Failed to parse Claude response: %s", message.content)
+        return json.loads(response.text)
+    except json.JSONDecodeError:
+        logger.error("Failed to parse Gemini Flash response: %s", response.text)
         raise
+
+
+def rewrite_native(transcript: str, target_language: str) -> str:
+    """Rewrite a transcript at native C2 level using Gemini Pro."""
+    if _use_mock():
+        return (
+            "Yesterday I went to the store and bought some groceries. "
+            "The weather was wonderful, and I felt happy. "
+            "I believe that learning languages is very important for my career."
+        )
+
+    client = _get_gemini_client()
+
+    prompt = f"""You are a native {target_language} speaker and expert language coach.
+
+Rewrite the following transcript so it sounds like a natural, fluent C2-level speaker wrote it. Preserve the original meaning and intent, but use idiomatic expressions, natural phrasing, appropriate register, and cultural nuance.
+
+Transcript:
+---
+{transcript}
+---
+
+Return ONLY the rewritten text, nothing else."""
+
+    response = client.models.generate_content(
+        model="gemini-2.0-pro",
+        contents=prompt,
+    )
+
+    return response.text.strip()

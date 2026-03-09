@@ -139,5 +139,6 @@ else:
     MEDIA_ROOT = BASE_DIR / "media"
 
 # AI API keys
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
