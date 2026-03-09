@@ -9,6 +9,8 @@ from submissions.models import DailySubmission
 
 
 class DailySubmissionType(DjangoObjectType):
+    duration_seconds = graphene.Int()
+
     class Meta:
         model = DailySubmission
         fields = (
@@ -17,11 +19,15 @@ class DailySubmissionType(DjangoObjectType):
             "question",
             "audio_file",
             "recorded_at",
-            "duration",
             "status",
             "created_at",
             "updated_at",
         )
+
+    def resolve_duration_seconds(self, info):
+        if self.duration:
+            return int(self.duration.total_seconds())
+        return None
 
 
 class Query(graphene.ObjectType):

@@ -76,6 +76,11 @@ def process_submission_task(self, submission_id: int):
                 tracker.resolved_at = None
                 tracker.save(update_fields=["error_count", "last_occurrence", "resolved_at"])
 
+        # Step 6: Generate exercises targeting weaknesses
+        from curriculum.tasks import generate_exercises_for_user
+
+        generate_exercises_for_user.delay(submission.user.id)
+
         submission.status = DailySubmission.Status.COMPLETED
         submission.save(update_fields=["status"])
 

@@ -25,7 +25,7 @@ export const GET_QUESTIONS = gql`
 `;
 
 export const GET_MY_EXERCISES = gql`
-  query GetMyExercises($dueDate: String) {
+  query GetMyExercises($dueDate: Date) {
     myExercises(dueDate: $dueDate) {
       id
       type

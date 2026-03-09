@@ -19,7 +19,9 @@ export default function DashboardPage() {
     variables: { dueDate: new Date().toISOString().split("T")[0] },
   });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: submissionsData } = useQuery<any>(GET_MY_SUBMISSIONS);
+  const { data: submissionsData } = useQuery<any>(GET_MY_SUBMISSIONS, {
+    fetchPolicy: "network-only",
+  });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: weaknessesData } = useQuery<any>(GET_MY_WEAKNESSES);
 

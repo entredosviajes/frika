@@ -11,7 +11,7 @@ export const GET_MY_SUBMISSIONS = gql`
         }
       }
       recordedAt
-      duration
+      durationSeconds
       status
     }
   }
