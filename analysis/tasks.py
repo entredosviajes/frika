@@ -22,6 +22,9 @@ def process_submission_task(self, submission_id: int):
         submission.status = DailySubmission.Status.PROCESSING
         submission.save(update_fields=["status"])
 
+        # Clean up any previous failed analysis
+        SubmissionAnalysis.objects.filter(submission=submission).delete()
+
         # Step 1: Transcribe
         transcript = transcribe_audio(submission.audio_file.path)
 

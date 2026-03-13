@@ -5,6 +5,7 @@ import { useQuery } from "@apollo/client/react";
 import { GET_QUESTIONS } from "@/graphql/queries/curriculum";
 import Card from "@/components/ui/Card";
 import AudioRecorder from "@/components/domain/AudioRecorder";
+import AudioUploader from "@/components/domain/AudioUploader";
 
 export default function RecordingStudioPage() {
   const params = useParams();
@@ -56,8 +57,15 @@ export default function RecordingStudioPage() {
         />
       </Card>
 
+      <Card>
+        <AudioUploader
+          questionId={Number(question.id)}
+          onSubmissionCreated={handleSubmissionCreated}
+        />
+      </Card>
+
       <p className="text-center text-xs text-gray-400">
-        Speak for up to 5 minutes. Your recording will be analyzed by AI.
+        Speak for up to 5 minutes, or upload an existing audio file. Your recording will be analyzed by AI.
       </p>
     </div>
   );

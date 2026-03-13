@@ -29,3 +29,14 @@ export const CREATE_SUBMISSION = gql`
     }
   }
 `;
+
+export const RETRY_SUBMISSION = gql`
+  mutation RetrySubmission($submissionId: ID!) {
+    retrySubmission(submissionId: $submissionId) {
+      submission {
+        id
+        status
+      }
+    }
+  }
+`;

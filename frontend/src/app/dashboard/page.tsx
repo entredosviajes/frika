@@ -1,9 +1,10 @@
 "use client";
 
-import { useQuery } from "@apollo/client/react";
+import { useQuery, useMutation } from "@apollo/client/react";
 import { ME_QUERY } from "@/graphql/queries/auth";
 import { GET_MY_EXERCISES } from "@/graphql/queries/curriculum";
-import { GET_MY_SUBMISSIONS } from "@/graphql/queries/submissions";
+import { GET_MY_SUBMISSIONS, GET_TODAY_SUBMISSION, GET_SUBMISSION_ANALYSIS } from "@/graphql/queries/submissions";
+import { RETRY_SUBMISSION } from "@/graphql/mutations/submissions";
 import { GET_MY_WEAKNESSES } from "@/graphql/queries/progress";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
@@ -19,16 +20,33 @@ export default function DashboardPage() {
     variables: { pendingOnly: true },
   });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: todayData } = useQuery<any>(GET_TODAY_SUBMISSION, {
+    fetchPolicy: "network-only",
+  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const todaySub = todayData?.todaySubmission;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: analysisData } = useQuery<any>(GET_SUBMISSION_ANALYSIS, {
+    variables: { submissionId: todaySub?.id },
+    skip: !todaySub?.id || todaySub?.status?.toLowerCase() !== "completed",
+  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: submissionsData } = useQuery<any>(GET_MY_SUBMISSIONS, {
     fetchPolicy: "network-only",
   });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: weaknessesData } = useQuery<any>(GET_MY_WEAKNESSES);
 
+  const [retrySubmission, { loading: retrying }] = useMutation(RETRY_SUBMISSION, {
+    refetchQueries: [{ query: GET_TODAY_SUBMISSION }],
+  });
+
   const user = meData?.me;
   const exercises = exercisesData?.myExercises ?? [];
   const submissions = submissionsData?.mySubmissions ?? [];
   const weaknesses = weaknessesData?.myWeaknesses ?? [];
+  const analysis = analysisData?.submissionAnalysis;
+  const todayStatus = todaySub?.status?.toLowerCase();
 
   return (
     <div className="space-y-6">
@@ -49,74 +67,133 @@ export default function DashboardPage() {
         )}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <h2 className="mb-4 text-lg font-semibold text-gray-900">
-            Today&apos;s Exercises
-          </h2>
-          {exercises.length === 0 ? (
-            <p className="text-sm text-gray-500">No pending exercises.</p>
-          ) : (
-            <ul className="space-y-2">
-              {exercises.map((ex: { id: string; type: string; isCompleted: boolean }) => (
+      {/* Today's Upload — hero section */}
+      <Card>
+        <h2 className="mb-4 text-lg font-semibold text-gray-900">
+          Today&apos;s Recording
+        </h2>
+        {todaySub ? (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-700">
+                  {todaySub.question.topic.name}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {todaySub.question.text}
+                </p>
+              </div>
+              <Badge
+                variant={todayStatus === "completed" ? "tone" : "default"}
+              >
+                {todayStatus}
+              </Badge>
+            </div>
+
+            {todayStatus === "completed" && analysis && (
+              <div className="space-y-3 rounded-md border border-gray-100 bg-gray-50 p-4">
+                <div>
+                  <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
+                    Your Transcript
+                  </p>
+                  <p className="text-sm text-gray-700">
+                    {analysis.rawTranscript}
+                  </p>
+                </div>
+                <div>
+                  <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
+                    Feedback
+                  </p>
+                  <p className="text-sm text-gray-700">
+                    {analysis.generalFeedback}
+                  </p>
+                </div>
+                <Link
+                  href={`/dashboard/feedback/${todaySub.id}`}
+                  className="inline-block text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                >
+                  View full analysis
+                </Link>
+              </div>
+            )}
+
+            {todayStatus === "processing" && (
+              <p className="text-sm text-gray-500">
+                Your recording is being analyzed...
+              </p>
+            )}
+
+            {todayStatus === "failed" && (
+              <div className="flex items-center gap-3 rounded-md border border-red-100 bg-red-50 p-3">
+                <p className="text-sm text-red-700">
+                  Analysis failed. This is usually a temporary issue.
+                </p>
+                <button
+                  onClick={() =>
+                    retrySubmission({ variables: { submissionId: todaySub.id } })
+                  }
+                  disabled={retrying}
+                  className="shrink-0 rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                >
+                  {retrying ? "Retrying..." : "Retry"}
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-500">
+              You haven&apos;t recorded anything today. Pick a topic to record
+              or upload an audio file.
+            </p>
+            <Link
+              href="/dashboard/practice"
+              className="inline-block rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+            >
+              Record or Upload Audio
+            </Link>
+          </div>
+        )}
+      </Card>
+
+      {/* Exercises */}
+      <Card>
+        <h2 className="mb-4 text-lg font-semibold text-gray-900">
+          Exercises
+        </h2>
+        {exercises.length === 0 ? (
+          <p className="text-sm text-gray-500">No pending exercises.</p>
+        ) : (
+          <ul className="space-y-2">
+            {exercises.map(
+              (ex: { id: string; type: string; isCompleted: boolean; weaknessTag?: string }) => (
                 <li key={ex.id}>
                   <Link
                     href={`/dashboard/exercises/${ex.id}`}
                     className="flex items-center justify-between rounded-md border border-gray-100 px-3 py-2 hover:bg-gray-50"
                   >
-                    <span className="text-sm capitalize text-gray-700">
-                      {ex.type.replace("_", " ")}
-                    </span>
+                    <div>
+                      <span className="text-sm capitalize text-gray-700">
+                        {ex.type.replace("_", " ")}
+                      </span>
+                      {ex.weaknessTag && (
+                        <span className="ml-2 text-xs text-gray-400">
+                          {ex.weaknessTag}
+                        </span>
+                      )}
+                    </div>
                     <Badge variant={ex.isCompleted ? "tone" : "default"}>
                       {ex.isCompleted ? "Done" : "Pending"}
                     </Badge>
                   </Link>
                 </li>
-              ))}
-            </ul>
-          )}
-        </Card>
+              )
+            )}
+          </ul>
+        )}
+      </Card>
 
-        <Card>
-          <h2 className="mb-4 text-lg font-semibold text-gray-900">
-            Recent Submissions
-          </h2>
-          {submissions.length === 0 ? (
-            <p className="text-sm text-gray-500">No submissions yet.</p>
-          ) : (
-            <ul className="space-y-2">
-              {submissions
-                .slice(0, 5)
-                .map(
-                  (sub: {
-                    id: string;
-                    question: { topic: { name: string } };
-                    status: string;
-                  }) => (
-                    <li key={sub.id}>
-                      <Link
-                        href={`/dashboard/feedback/${sub.id}`}
-                        className="flex items-center justify-between rounded-md border border-gray-100 px-3 py-2 hover:bg-gray-50"
-                      >
-                        <span className="text-sm text-gray-700">
-                          {sub.question.topic.name}
-                        </span>
-                        <Badge
-                          variant={
-                            sub.status === "completed" ? "tone" : "default"
-                          }
-                        >
-                          {sub.status}
-                        </Badge>
-                      </Link>
-                    </li>
-                  )
-                )}
-            </ul>
-          )}
-        </Card>
-      </div>
-
+      {/* Weaknesses */}
       <Card>
         <h2 className="mb-4 text-lg font-semibold text-gray-900">
           Top Weaknesses
@@ -124,14 +201,35 @@ export default function DashboardPage() {
         <WeaknessChart weaknesses={weaknesses.slice(0, 5)} />
       </Card>
 
-      <div className="flex gap-4">
-        <Link
-          href="/dashboard/practice"
-          className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-        >
-          Start Practicing
-        </Link>
-      </div>
+      {/* Recent Submissions — de-emphasized */}
+      {submissions.length > 0 && (
+        <details className="group">
+          <summary className="cursor-pointer text-sm font-medium text-gray-400 hover:text-gray-600">
+            Past submissions ({submissions.length})
+          </summary>
+          <ul className="mt-3 space-y-1">
+            {submissions
+              .slice(0, 10)
+              .map(
+                (sub: {
+                  id: string;
+                  question: { topic: { name: string } };
+                  status: string;
+                }) => (
+                  <li key={sub.id}>
+                    <Link
+                      href={`/dashboard/feedback/${sub.id}`}
+                      className="flex items-center justify-between rounded-md px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-50"
+                    >
+                      <span>{sub.question.topic.name}</span>
+                      <span className="text-xs">{sub.status.toLowerCase()}</span>
+                    </Link>
+                  </li>
+                )
+              )}
+          </ul>
+        </details>
+      )}
     </div>
   );
 }

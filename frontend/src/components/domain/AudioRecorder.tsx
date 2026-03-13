@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { useMutation } from "@apollo/client/react";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { GENERATE_PRESIGNED_URL, CREATE_SUBMISSION } from "@/graphql/mutations/submissions";
@@ -93,8 +93,11 @@ export default function AudioRecorder({
     };
   }, [state, drawWaveform]);
 
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
   const handleUpload = async () => {
     if (!audioBlob) return;
+    setUploadError(null);
 
     try {
       const { data: urlData } = await generateUrl({
@@ -124,6 +127,7 @@ export default function AudioRecorder({
       onSubmissionCreated?.((data as any).createSubmission.submission.id);
     } catch (err) {
       console.error("Upload failed:", err);
+      setUploadError("Upload failed. Please try again.");
     }
   };
 
@@ -175,7 +179,7 @@ export default function AudioRecorder({
         {state === "completed" && (
           <>
             <Button onClick={handleUpload} disabled={submitting} size="lg">
-              {submitting ? "Uploading..." : "Submit Recording"}
+              {submitting ? "Uploading..." : uploadError ? "Retry Upload" : "Submit Recording"}
             </Button>
             <Button onClick={reset} variant="ghost">
               Record Again
@@ -191,6 +195,7 @@ export default function AudioRecorder({
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
+      {uploadError && <p className="text-sm text-red-600">{uploadError}</p>}
     </div>
   );
 }

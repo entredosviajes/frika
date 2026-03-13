@@ -1,11 +1,20 @@
 import json
 import logging
+import re
 
 from celery import shared_task
 from django.conf import settings
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
+
+
+def _clean_json_response(text: str) -> str:
+    """Strip markdown fences and clean up common Gemini JSON issues."""
+    text = text.strip()
+    text = re.sub(r"^```(?:json)?\s*", "", text)
+    text = re.sub(r"\s*```$", "", text)
+    return text.strip()
 
 
 def _get_gemini_client():
@@ -58,13 +67,18 @@ Make them appropriate for {profile.proficiency_level} level.
 
 Return ONLY valid JSON, no markdown fences."""
 
+    from google.genai import types
+
     response = client.models.generate_content(
         model="gemini-2.5-flash",
         contents=prompt,
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json",
+        ),
     )
 
     try:
-        exercises_data = json.loads(response.text)
+        exercises_data = json.loads(_clean_json_response(response.text))
     except json.JSONDecodeError:
         logger.error("Failed to parse exercises from Gemini: %s", response.text)
         return
@@ -77,7 +91,7 @@ Return ONLY valid JSON, no markdown fences."""
             weakness_tag=ex.get("weakness_tag", ""),
         )
 
-    logger.info("Generated %d exercises for %s due %s", len(exercises_data), user.username, tomorrow)
+    logger.info("Generated %d exercises for %s", len(exercises_data), user.username)
 
 
 @shared_task
@@ -110,13 +124,18 @@ Return a JSON array of objects with:
 
 Return ONLY valid JSON, no markdown fences."""
 
+    from google.genai import types as genai_types
+
     response = client.models.generate_content(
         model="gemini-2.5-pro",
         contents=prompt,
+        config=genai_types.GenerateContentConfig(
+            response_mime_type="application/json",
+        ),
     )
 
     try:
-        questions_data = json.loads(response.text)
+        questions_data = json.loads(_clean_json_response(response.text))
     except (json.JSONDecodeError, IndexError):
         logger.error("Failed to parse exam questions from Gemini Pro")
         return

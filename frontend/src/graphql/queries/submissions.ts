@@ -17,6 +17,23 @@ export const GET_MY_SUBMISSIONS = gql`
   }
 `;
 
+export const GET_TODAY_SUBMISSION = gql`
+  query GetTodaySubmission {
+    todaySubmission {
+      id
+      question {
+        text
+        topic {
+          name
+        }
+      }
+      recordedAt
+      durationSeconds
+      status
+    }
+  }
+`;
+
 export const GET_SUBMISSION_ANALYSIS = gql`
   query GetSubmissionAnalysis($submissionId: ID!) {
     submissionAnalysis(submissionId: $submissionId) {

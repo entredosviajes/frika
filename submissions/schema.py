@@ -32,10 +32,25 @@ class DailySubmissionType(DjangoObjectType):
 
 class Query(graphene.ObjectType):
     my_submissions = graphene.List(DailySubmissionType)
+    today_submission = graphene.Field(DailySubmissionType)
 
     @login_required
     def resolve_my_submissions(self, info):
         return DailySubmission.objects.filter(user=info.context.user)
+
+    @login_required
+    def resolve_today_submission(self, info):
+        from django.utils import timezone
+
+        today = timezone.now().date()
+        return (
+            DailySubmission.objects.filter(
+                user=info.context.user,
+                recorded_at__date=today,
+            )
+            .order_by("-recorded_at")
+            .first()
+        )
 
 
 class GeneratePresignedUrl(graphene.Mutation):
@@ -102,6 +117,29 @@ class CreateSubmission(graphene.Mutation):
         return CreateSubmission(submission=submission)
 
 
+class RetrySubmission(graphene.Mutation):
+    class Arguments:
+        submission_id = graphene.ID(required=True)
+
+    submission = graphene.Field(DailySubmissionType)
+
+    @login_required
+    def mutate(self, info, submission_id):
+        from analysis.tasks import process_submission_task
+
+        submission = DailySubmission.objects.get(
+            id=submission_id, user=info.context.user
+        )
+        if submission.status != DailySubmission.Status.FAILED:
+            raise Exception("Only failed submissions can be retried.")
+
+        submission.status = DailySubmission.Status.PENDING
+        submission.save(update_fields=["status"])
+        process_submission_task.delay(submission.id)
+        return RetrySubmission(submission=submission)
+
+
 class Mutation(graphene.ObjectType):
     generate_presigned_url = GeneratePresignedUrl.Field()
     create_submission = CreateSubmission.Field()
+    retry_submission = RetrySubmission.Field()

@@ -1,9 +1,18 @@
 import json
 import logging
+import re
 
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
+
+
+def _clean_json_response(text: str) -> str:
+    """Strip markdown fences and clean up common Gemini JSON issues."""
+    text = text.strip()
+    text = re.sub(r"^```(?:json)?\s*", "", text)
+    text = re.sub(r"\s*```$", "", text)
+    return text.strip()
 
 
 def _use_mock():
@@ -112,13 +121,19 @@ Analyze this transcript and return a JSON object with:
 
 Return ONLY valid JSON, no markdown fences."""
 
+    from google.genai import types
+
     response = client.models.generate_content(
         model="gemini-2.5-flash",
         contents=prompt,
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json",
+        ),
     )
 
+    cleaned = _clean_json_response(response.text)
     try:
-        return json.loads(response.text)
+        return json.loads(cleaned)
     except json.JSONDecodeError:
         logger.error("Failed to parse Gemini Flash response: %s", response.text)
         raise
