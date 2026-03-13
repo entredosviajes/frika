@@ -16,7 +16,7 @@ export default function DashboardPage() {
   const { data: meData } = useQuery<any>(ME_QUERY);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: exercisesData } = useQuery<any>(GET_MY_EXERCISES, {
-    variables: { dueDate: new Date().toISOString().split("T")[0] },
+    variables: { pendingOnly: true },
   });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: submissionsData } = useQuery<any>(GET_MY_SUBMISSIONS, {

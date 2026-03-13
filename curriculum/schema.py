@@ -31,7 +31,6 @@ class ExerciseType(DjangoObjectType):
             "type",
             "content",
             "is_completed",
-            "due_date",
             "created_at",
             "updated_at",
         )
@@ -74,7 +73,7 @@ class ExamType(DjangoObjectType):
 class Query(graphene.ObjectType):
     topics = graphene.List(TopicType)
     questions = graphene.List(QuestionType, topic_id=graphene.ID())
-    my_exercises = graphene.List(ExerciseType, due_date=graphene.Date())
+    my_exercises = graphene.List(ExerciseType, pending_only=graphene.Boolean())
     my_exams = graphene.List(ExamType)
     exam = graphene.Field(ExamType, exam_id=graphene.ID(required=True))
 
@@ -88,10 +87,10 @@ class Query(graphene.ObjectType):
         return qs
 
     @login_required
-    def resolve_my_exercises(self, info, due_date=None):
-        qs = Exercise.objects.filter(user=info.context.user).order_by("due_date")
-        if due_date:
-            qs = qs.filter(due_date=due_date)
+    def resolve_my_exercises(self, info, pending_only=None):
+        qs = Exercise.objects.filter(user=info.context.user).order_by("-created_at")
+        if pending_only:
+            qs = qs.filter(is_completed=False)
         return qs
 
     @login_required

@@ -1,6 +1,5 @@
 import json
 import logging
-from datetime import timedelta
 
 from celery import shared_task
 from django.conf import settings
@@ -24,11 +23,10 @@ def generate_exercises_for_user(user_id: int):
 
     user = User.objects.select_related("profile").get(id=user_id)
     profile = user.profile
-    tomorrow = (timezone.now() + timedelta(days=1)).date()
 
-    # Don't generate if exercises already exist for tomorrow
-    if Exercise.objects.filter(user=user, due_date=tomorrow).exists():
-        logger.info("Exercises already exist for %s on %s", user.username, tomorrow)
+    # Don't generate if user already has pending exercises
+    if Exercise.objects.filter(user=user, is_completed=False).count() >= 4:
+        logger.info("User %s already has pending exercises", user.username)
         return
 
     # Get top weaknesses
@@ -74,7 +72,6 @@ Return ONLY valid JSON, no markdown fences."""
             user=user,
             type=ex["type"],
             content=ex["content"],
-            due_date=tomorrow,
         )
 
     logger.info("Generated %d exercises for %s due %s", len(exercises_data), user.username, tomorrow)

@@ -33,10 +33,9 @@ class Exercise(TimestampedModel):
     type = models.CharField(max_length=20, choices=ExerciseType.choices)
     content = models.JSONField()
     is_completed = models.BooleanField(default=False)
-    due_date = models.DateField()
 
     def __str__(self):
-        return f"{self.type} for {self.user.username} due {self.due_date}"
+        return f"{self.type} for {self.user.username}"
 
 
 class Exam(TimestampedModel):

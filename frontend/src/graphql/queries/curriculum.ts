@@ -25,13 +25,12 @@ export const GET_QUESTIONS = gql`
 `;
 
 export const GET_MY_EXERCISES = gql`
-  query GetMyExercises($dueDate: Date) {
-    myExercises(dueDate: $dueDate) {
+  query GetMyExercises($pendingOnly: Boolean) {
+    myExercises(pendingOnly: $pendingOnly) {
       id
       type
       content
       isCompleted
-      dueDate
     }
   }
 `;
