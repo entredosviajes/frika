@@ -6,15 +6,6 @@ import { useAuth } from "@/hooks/useAuth";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 
-const LEVELS = [
-  { value: "A1", label: "A1 - Beginner" },
-  { value: "A2", label: "A2 - Elementary" },
-  { value: "B1", label: "B1 - Intermediate" },
-  { value: "B2", label: "B2 - Upper Intermediate" },
-  { value: "C1", label: "C1 - Advanced" },
-  { value: "C2", label: "C2 - Proficiency" },
-];
-
 export default function RegisterPage() {
   const { register, loading } = useAuth();
   const [form, setForm] = useState({
@@ -22,7 +13,6 @@ export default function RegisterPage() {
     email: "",
     password: "",
     targetLanguage: "",
-    proficiencyLevel: "A1",
   });
   const [error, setError] = useState("");
 
@@ -38,7 +28,6 @@ export default function RegisterPage() {
         form.email,
         form.password,
         form.targetLanguage,
-        form.proficiencyLevel
       );
     } catch {
       setError("Registration failed. Please try again.");
@@ -90,7 +79,7 @@ export default function RegisterPage() {
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">
-            Target Language
+            What language are you learning?
           </label>
           <input
             type="text"
@@ -100,22 +89,6 @@ export default function RegisterPage() {
             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             required
           />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">
-            Proficiency Level
-          </label>
-          <select
-            value={form.proficiencyLevel}
-            onChange={(e) => update("proficiencyLevel", e.target.value)}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-          >
-            {LEVELS.map((l) => (
-              <option key={l.value} value={l.value}>
-                {l.label}
-              </option>
-            ))}
-          </select>
         </div>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <Button type="submit" disabled={loading} className="w-full">

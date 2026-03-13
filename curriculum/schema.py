@@ -2,110 +2,43 @@ import graphene
 from graphene_django import DjangoObjectType
 from graphql_jwt.decorators import login_required
 
-from curriculum.models import Exam, ExamQuestion, Exercise, Question, Topic
-
-
-class TopicType(DjangoObjectType):
-    question_count = graphene.Int()
-
-    class Meta:
-        model = Topic
-        fields = ("id", "name", "description", "created_at", "updated_at")
-
-    def resolve_question_count(self, info):
-        return self.questions.count()
-
-
-class QuestionType(DjangoObjectType):
-    class Meta:
-        model = Question
-        fields = ("id", "topic", "text", "proficiency_level", "created_at", "updated_at")
+from curriculum.models import Exercise
 
 
 class ExerciseType(DjangoObjectType):
+    feedback = graphene.String()
+
     class Meta:
         model = Exercise
         fields = (
             "id",
             "user",
+            "mistake",
             "type",
             "content",
-            "weakness_tag",
             "user_answer",
             "is_completed",
+            "feedback",
             "created_at",
             "updated_at",
         )
-
-
-class ExamQuestionType(DjangoObjectType):
-    class Meta:
-        model = ExamQuestion
-        fields = (
-            "id",
-            "exam",
-            "question",
-            "user_answer",
-            "score",
-            "order",
-            "created_at",
-            "updated_at",
-        )
-
-
-class ExamType(DjangoObjectType):
-    exam_questions = graphene.List(ExamQuestionType)
-
-    class Meta:
-        model = Exam
-        fields = (
-            "id",
-            "user",
-            "start_date",
-            "end_date",
-            "score",
-            "created_at",
-            "updated_at",
-        )
-
-    def resolve_exam_questions(self, info):
-        return ExamQuestion.objects.filter(exam=self).select_related("question__topic")
 
 
 class Query(graphene.ObjectType):
-    topics = graphene.List(TopicType)
-    questions = graphene.List(QuestionType, topic_id=graphene.ID())
-    my_exercises = graphene.List(ExerciseType, pending_only=graphene.Boolean())
-    my_exams = graphene.List(ExamType)
-    exam = graphene.Field(ExamType, exam_id=graphene.ID(required=True))
-
-    def resolve_topics(self, info):
-        return Topic.objects.all()
-
-    def resolve_questions(self, info, topic_id=None):
-        qs = Question.objects.select_related("topic")
-        if topic_id:
-            qs = qs.filter(topic_id=topic_id)
-        return qs
+    my_exercises = graphene.List(
+        ExerciseType,
+        pending_only=graphene.Boolean(),
+        submission_id=graphene.ID(),
+    )
 
     @login_required
-    def resolve_my_exercises(self, info, pending_only=None):
+    def resolve_my_exercises(self, info, pending_only=None, submission_id=None):
         qs = Exercise.objects.filter(user=info.context.user).order_by("-created_at")
         if pending_only:
             qs = qs.filter(is_completed=False)
+        if submission_id:
+            qs = qs.filter(mistake__analysis__submission_id=submission_id)
         return qs
-
-    @login_required
-    def resolve_my_exams(self, info):
-        return Exam.objects.filter(user=info.context.user).prefetch_related(
-            "examquestion_set__question__topic"
-        )
-
-    @login_required
-    def resolve_exam(self, info, exam_id):
-        return Exam.objects.filter(
-            user=info.context.user, id=exam_id
-        ).prefetch_related("examquestion_set__question__topic").first()
 
 
 class SubmitExerciseAnswer(graphene.Mutation):
@@ -117,75 +50,24 @@ class SubmitExerciseAnswer(graphene.Mutation):
 
     @login_required
     def mutate(self, info, exercise_id, answer):
-        exercise = Exercise.objects.get(id=exercise_id, user=info.context.user)
+        from analysis.services import validate_exercise_answer
+
+        exercise = Exercise.objects.select_related(
+            "mistake", "user__profile"
+        ).get(id=exercise_id, user=info.context.user)
+
+        feedback = validate_exercise_answer(
+            exercise=exercise,
+            user_answer=answer,
+            target_language=exercise.user.profile.target_language,
+        )
+
         exercise.user_answer = answer
         exercise.is_completed = True
-        exercise.save(update_fields=["user_answer", "is_completed"])
+        exercise.feedback = feedback
+        exercise.save(update_fields=["user_answer", "is_completed", "feedback"])
         return SubmitExerciseAnswer(exercise=exercise)
-
-
-class SubmitExamAnswer(graphene.Mutation):
-    class Arguments:
-        exam_question_id = graphene.ID(required=True)
-        answer = graphene.String(required=True)
-
-    exam_question = graphene.Field(ExamQuestionType)
-
-    @login_required
-    def mutate(self, info, exam_question_id, answer):
-        exam_question = ExamQuestion.objects.select_related("exam").get(
-            id=exam_question_id, exam__user=info.context.user
-        )
-        exam_question.user_answer = answer
-        exam_question.save()
-        return SubmitExamAnswer(exam_question=exam_question)
-
-
-class CreateTopic(graphene.Mutation):
-    class Arguments:
-        name = graphene.String(required=True)
-        description = graphene.String()
-
-    topic = graphene.Field(TopicType)
-
-    @login_required
-    def mutate(self, info, name, description=""):
-        topic = Topic.objects.create(name=name, description=description)
-        return CreateTopic(topic=topic)
-
-
-class DeleteTopic(graphene.Mutation):
-    class Arguments:
-        topic_id = graphene.ID(required=True)
-
-    ok = graphene.Boolean()
-
-    @login_required
-    def mutate(self, info, topic_id):
-        Topic.objects.filter(id=topic_id).delete()
-        return DeleteTopic(ok=True)
-
-
-class CreateQuestion(graphene.Mutation):
-    class Arguments:
-        topic_id = graphene.ID(required=True)
-        text = graphene.String(required=True)
-        proficiency_level = graphene.String()
-
-    question = graphene.Field(QuestionType)
-
-    @login_required
-    def mutate(self, info, topic_id, text, proficiency_level=""):
-        topic = Topic.objects.get(id=topic_id)
-        question = Question.objects.create(
-            topic=topic, text=text, proficiency_level=proficiency_level
-        )
-        return CreateQuestion(question=question)
 
 
 class Mutation(graphene.ObjectType):
     submit_exercise_answer = SubmitExerciseAnswer.Field()
-    submit_exam_answer = SubmitExamAnswer.Field()
-    create_topic = CreateTopic.Field()
-    delete_topic = DeleteTopic.Field()
-    create_question = CreateQuestion.Field()

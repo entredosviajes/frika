@@ -55,7 +55,7 @@ def transcribe_audio(audio_path: str) -> str:
     return response.text.strip()
 
 
-def analyze_transcript(transcript: str, target_language: str, proficiency_level: str) -> dict:
+def analyze_transcript(transcript: str, target_language: str) -> dict:
     """Analyze a transcript using Gemini Flash for grammar/mistakes.
 
     Returns a dict with keys:
@@ -103,14 +103,14 @@ def analyze_transcript(transcript: str, target_language: str, proficiency_level:
 
     client = _get_gemini_client()
 
-    prompt = f"""You are an expert {target_language} language coach. A student at {proficiency_level} level recorded themselves speaking. Here is their transcript:
+    prompt = f"""You are an expert {target_language} language coach. A student recorded themselves speaking. Here is their transcript:
 
 ---
 {transcript}
 ---
 
 Analyze this transcript and return a JSON object with:
-1. "rewritten_version": Rewrite the transcript at a higher proficiency level while keeping the same meaning.
+1. "rewritten_version": Rewrite the transcript so it sounds natural and fluent while keeping the same meaning.
 2. "general_feedback": 2-3 sentences of encouraging, constructive feedback.
 3. "mistakes": An array of objects, each with:
    - "original_text": the segment containing the error
@@ -140,7 +140,7 @@ Return ONLY valid JSON, no markdown fences."""
 
 
 def rewrite_native(transcript: str, target_language: str) -> str:
-    """Rewrite a transcript at native C2 level using Gemini Pro."""
+    """Rewrite a transcript at native level using Gemini Pro."""
     if _use_mock():
         return (
             "Yesterday I went to the store and bought some groceries. "
@@ -152,7 +152,7 @@ def rewrite_native(transcript: str, target_language: str) -> str:
 
     prompt = f"""You are a native {target_language} speaker and expert language coach.
 
-Rewrite the following transcript so it sounds like a natural, fluent C2-level speaker wrote it. Preserve the original meaning and intent, but use idiomatic expressions, natural phrasing, appropriate register, and cultural nuance.
+Rewrite the following transcript so it sounds like a natural, fluent native speaker wrote it. Preserve the original meaning and intent, but use idiomatic expressions, natural phrasing, appropriate register, and cultural nuance.
 
 Transcript:
 ---
@@ -163,6 +163,42 @@ Return ONLY the rewritten text, nothing else."""
 
     response = client.models.generate_content(
         model="gemini-2.5-pro",
+        contents=prompt,
+    )
+
+    return response.text.strip()
+
+
+def validate_exercise_answer(exercise, user_answer: str, target_language: str) -> str:
+    """Validate a user's exercise answer using Gemini Flash.
+
+    Returns a feedback string explaining whether the answer is acceptable.
+    """
+    if _use_mock():
+        return "Good attempt! Your answer is acceptable."
+
+    client = _get_gemini_client()
+    content = exercise.content if isinstance(exercise.content, dict) else json.loads(exercise.content)
+
+    prompt = f"""You are a {target_language} language coach evaluating a student's exercise answer.
+
+Exercise type: {exercise.type}
+Instruction: {content.get('instruction', '')}
+Prompt: {content.get('prompt', '')}
+Expected answer: {content.get('answer', '')}
+Student's answer: {user_answer}
+
+Evaluate whether the student's answer is acceptable. It doesn't need to be identical to the expected answer — it just needs to be linguistically correct and fulfill the instruction.
+
+Respond with a short evaluation (2-3 sentences):
+- If correct or acceptable: confirm it's right and briefly explain why.
+- If partially correct: acknowledge what's right and explain what could be improved.
+- If incorrect: explain the issue clearly and give the correct form.
+
+Return ONLY the feedback text, nothing else."""
+
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
         contents=prompt,
     )
 

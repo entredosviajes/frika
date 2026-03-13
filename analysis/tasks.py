@@ -1,7 +1,6 @@
 import logging
 
 from celery import shared_task
-from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -11,11 +10,10 @@ def process_submission_task(self, submission_id: int):
     """Process an audio submission: transcribe, analyze, and save results."""
     from analysis.models import Mistake, SubmissionAnalysis
     from analysis.services import analyze_transcript, rewrite_native, transcribe_audio
-    from progress.models import WeaknessTracker
     from submissions.models import DailySubmission
 
     submission = DailySubmission.objects.select_related(
-        "user__profile", "question"
+        "user__profile"
     ).get(id=submission_id)
 
     try:
@@ -33,10 +31,9 @@ def process_submission_task(self, submission_id: int):
         result = analyze_transcript(
             transcript=transcript,
             target_language=profile.target_language,
-            proficiency_level=profile.proficiency_level,
         )
 
-        # Step 3: Rewrite with Gemini Pro (native C2-level rewrite)
+        # Step 3: Rewrite with Gemini Pro (native-level rewrite)
         rewritten = rewrite_native(
             transcript=transcript,
             target_language=profile.target_language,
@@ -50,10 +47,10 @@ def process_submission_task(self, submission_id: int):
             general_feedback=result.get("general_feedback", ""),
         )
 
-        # Step 4: Save mistakes
-        mistakes = []
+        # Step 5: Save mistakes
+        mistake_objects = []
         for m in result.get("mistakes", []):
-            mistakes.append(
+            mistake_objects.append(
                 Mistake(
                     analysis=analysis,
                     original_text=m["original_text"],
@@ -63,26 +60,16 @@ def process_submission_task(self, submission_id: int):
                     severity=m["severity"],
                 )
             )
-        Mistake.objects.bulk_create(mistakes)
+        created_mistakes = Mistake.objects.bulk_create(mistake_objects)
 
-        # Step 5: Update weakness tracker
-        now = timezone.now()
-        for m in result.get("mistakes", []):
-            tracker, created = WeaknessTracker.objects.get_or_create(
-                user=submission.user,
-                tag_name=m["category"],
-                defaults={"error_count": 1, "last_occurrence": now},
+        # Step 6: Generate one exercise per mistake
+        if created_mistakes:
+            from curriculum.tasks import generate_exercises_for_mistakes
+
+            generate_exercises_for_mistakes.delay(
+                [m.id for m in created_mistakes],
+                submission.user.id,
             )
-            if not created:
-                tracker.error_count += 1
-                tracker.last_occurrence = now
-                tracker.resolved_at = None
-                tracker.save(update_fields=["error_count", "last_occurrence", "resolved_at"])
-
-        # Step 6: Generate exercises targeting weaknesses
-        from curriculum.tasks import generate_exercises_for_user
-
-        generate_exercises_for_user.delay(submission.user.id)
 
         submission.status = DailySubmission.Status.COMPLETED
         submission.save(update_fields=["status"])

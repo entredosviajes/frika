@@ -17,8 +17,6 @@ class LearnerProfileType(DjangoObjectType):
         fields = (
             "id",
             "target_language",
-            "proficiency_level",
-            "daily_streak",
             "timezone",
             "created_at",
             "updated_at",
@@ -39,11 +37,10 @@ class Register(graphene.Mutation):
         email = graphene.String(required=True)
         password = graphene.String(required=True)
         target_language = graphene.String(required=True)
-        proficiency_level = graphene.String(required=True)
 
     user = graphene.Field(UserType)
 
-    def mutate(self, info, username, email, password, target_language, proficiency_level):
+    def mutate(self, info, username, email, password, target_language):
         user = User.objects.create_user(
             username=username,
             email=email,
@@ -52,7 +49,6 @@ class Register(graphene.Mutation):
         LearnerProfile.objects.create(
             user=user,
             target_language=target_language,
-            proficiency_level=proficiency_level,
         )
         return Register(user=user)
 
@@ -60,7 +56,6 @@ class Register(graphene.Mutation):
 class UpdateProfile(graphene.Mutation):
     class Arguments:
         target_language = graphene.String()
-        proficiency_level = graphene.String()
         timezone = graphene.String()
 
     profile = graphene.Field(LearnerProfileType)

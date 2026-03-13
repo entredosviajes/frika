@@ -7,6 +7,19 @@ from graphql_jwt.decorators import login_required
 
 from submissions.models import DailySubmission
 
+CONVERSATION_STARTERS = [
+    "Describe your morning routine today.",
+    "Talk about a movie or book you enjoyed recently.",
+    "What would you do if you won the lottery?",
+    "Describe your favorite place in the world.",
+    "Talk about a challenge you overcame.",
+    "What are your plans for the weekend?",
+    "Describe a meal you love cooking or eating.",
+    "Talk about a person who inspires you.",
+    "What would you change about your city?",
+    "Describe your dream vacation.",
+]
+
 
 class DailySubmissionType(DjangoObjectType):
     duration_seconds = graphene.Int()
@@ -16,7 +29,6 @@ class DailySubmissionType(DjangoObjectType):
         fields = (
             "id",
             "user",
-            "question",
             "audio_file",
             "recorded_at",
             "status",
@@ -33,6 +45,7 @@ class DailySubmissionType(DjangoObjectType):
 class Query(graphene.ObjectType):
     my_submissions = graphene.List(DailySubmissionType)
     today_submission = graphene.Field(DailySubmissionType)
+    conversation_starters = graphene.List(graphene.String)
 
     @login_required
     def resolve_my_submissions(self, info):
@@ -51,6 +64,11 @@ class Query(graphene.ObjectType):
             .order_by("-recorded_at")
             .first()
         )
+
+    def resolve_conversation_starters(self, info):
+        import random
+
+        return random.sample(CONVERSATION_STARTERS, min(3, len(CONVERSATION_STARTERS)))
 
 
 class GeneratePresignedUrl(graphene.Mutation):
@@ -85,14 +103,12 @@ class GeneratePresignedUrl(graphene.Mutation):
             )
             return GeneratePresignedUrl(url=presigned_url, key=key)
         else:
-            # Local development: return a local upload endpoint
             upload_url = f"http://localhost:8000/upload/{key}"
             return GeneratePresignedUrl(url=upload_url, key=key)
 
 
 class CreateSubmission(graphene.Mutation):
     class Arguments:
-        question_id = graphene.ID(required=True)
         audio_key = graphene.String(required=True)
         recorded_at = graphene.DateTime(required=True)
         duration = graphene.Int()
@@ -100,7 +116,7 @@ class CreateSubmission(graphene.Mutation):
     submission = graphene.Field(DailySubmissionType)
 
     @login_required
-    def mutate(self, info, question_id, audio_key, recorded_at, duration=None):
+    def mutate(self, info, audio_key, recorded_at, duration=None):
         from datetime import timedelta
 
         from analysis.tasks import process_submission_task
@@ -108,7 +124,6 @@ class CreateSubmission(graphene.Mutation):
         duration_td = timedelta(seconds=duration) if duration else None
         submission = DailySubmission.objects.create(
             user=info.context.user,
-            question_id=question_id,
             audio_file=audio_key,
             recorded_at=recorded_at,
             duration=duration_td,

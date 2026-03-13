@@ -1,68 +1,21 @@
 import { gql } from "@apollo/client";
 
-export const GET_TOPICS = gql`
-  query GetTopics {
-    topics {
-      id
-      name
-      description
-      questionCount
-    }
-  }
-`;
-
-export const GET_QUESTIONS = gql`
-  query GetQuestions($topicId: ID!) {
-    questions(topicId: $topicId) {
-      id
-      text
-      topic {
-        name
-      }
-      proficiencyLevel
-    }
-  }
-`;
-
 export const GET_MY_EXERCISES = gql`
-  query GetMyExercises($pendingOnly: Boolean) {
-    myExercises(pendingOnly: $pendingOnly) {
+  query GetMyExercises($pendingOnly: Boolean, $submissionId: ID) {
+    myExercises(pendingOnly: $pendingOnly, submissionId: $submissionId) {
       id
       type
       content
-      weaknessTag
       userAnswer
+      feedback
       isCompleted
-    }
-  }
-`;
-
-export const GET_MY_EXAMS = gql`
-  query GetMyExams {
-    myExams {
-      id
-      startDate
-      endDate
-      score
-    }
-  }
-`;
-
-export const GET_EXAM = gql`
-  query GetExam($examId: ID!) {
-    exam(examId: $examId) {
-      id
-      startDate
-      endDate
-      score
-      examquestionSet {
+      mistake {
         id
-        question {
-          text
-        }
-        userAnswer
-        score
-        order
+        originalText
+        correction
+        explanation
+        category
+        severity
       }
     }
   }

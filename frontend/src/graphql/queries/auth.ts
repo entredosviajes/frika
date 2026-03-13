@@ -8,8 +8,6 @@ export const ME_QUERY = gql`
       email
       profile {
         targetLanguage
-        proficiencyLevel
-        dailyStreak
         timezone
       }
     }

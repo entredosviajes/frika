@@ -15,7 +15,7 @@ class DailySubmission(TimestampedModel):
         "users.User", on_delete=models.CASCADE, related_name="submissions"
     )
     question = models.ForeignKey(
-        "curriculum.Question", on_delete=models.CASCADE, related_name="submissions"
+        "curriculum.Question", on_delete=models.SET_NULL, null=True, blank=True, related_name="submissions"
     )
     audio_file = models.FileField(upload_to="submissions/audio/%Y/%m/%d/")
     recorded_at = models.DateTimeField()

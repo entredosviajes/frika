@@ -24,8 +24,6 @@ const client = new ApolloClient({
         fields: {
           myExercises: { merge: false },
           mySubmissions: { merge: false },
-          myWeaknesses: { merge: false },
-          myReports: { merge: false },
         },
       },
     },

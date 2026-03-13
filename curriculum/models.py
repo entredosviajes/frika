@@ -30,10 +30,13 @@ class Exercise(TimestampedModel):
     user = models.ForeignKey(
         "users.User", on_delete=models.CASCADE, related_name="exercises"
     )
+    mistake = models.OneToOneField(
+        "analysis.Mistake", on_delete=models.CASCADE, related_name="exercise",
+    )
     type = models.CharField(max_length=20, choices=ExerciseType.choices)
     content = models.JSONField()
-    weakness_tag = models.CharField(max_length=100, blank=True)
     user_answer = models.TextField(blank=True)
+    feedback = models.TextField(blank=True)
     is_completed = models.BooleanField(default=False)
 
     def __str__(self):

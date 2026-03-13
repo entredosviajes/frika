@@ -15,14 +15,12 @@ export const REGISTER_MUTATION = gql`
     $email: String!
     $password: String!
     $targetLanguage: String!
-    $proficiencyLevel: String!
   ) {
     register(
       username: $username
       email: $email
       password: $password
       targetLanguage: $targetLanguage
-      proficiencyLevel: $proficiencyLevel
     ) {
       user {
         id

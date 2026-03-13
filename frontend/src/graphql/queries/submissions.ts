@@ -4,12 +4,6 @@ export const GET_MY_SUBMISSIONS = gql`
   query GetMySubmissions {
     mySubmissions {
       id
-      question {
-        text
-        topic {
-          name
-        }
-      }
       recordedAt
       durationSeconds
       status
@@ -21,16 +15,16 @@ export const GET_TODAY_SUBMISSION = gql`
   query GetTodaySubmission {
     todaySubmission {
       id
-      question {
-        text
-        topic {
-          name
-        }
-      }
       recordedAt
       durationSeconds
       status
     }
+  }
+`;
+
+export const GET_CONVERSATION_STARTERS = gql`
+  query GetConversationStarters {
+    conversationStarters
   }
 `;
 

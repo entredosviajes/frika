@@ -6,12 +6,10 @@ import { GENERATE_PRESIGNED_URL, CREATE_SUBMISSION } from "@/graphql/mutations/s
 import Button from "@/components/ui/Button";
 
 interface AudioUploaderProps {
-  questionId: number;
   onSubmissionCreated?: (submissionId: string) => void;
 }
 
 export default function AudioUploader({
-  questionId,
   onSubmissionCreated,
 }: AudioUploaderProps) {
   const fileRef = useRef<HTMLInputElement>(null);
@@ -48,7 +46,6 @@ export default function AudioUploader({
 
       const { data } = await createSubmission({
         variables: {
-          questionId,
           audioKey: key,
           recordedAt: new Date().toISOString(),
         },
@@ -67,15 +64,13 @@ export default function AudioUploader({
       <p className="text-sm font-medium text-gray-700">
         Or upload an audio file
       </p>
-      <div className="flex items-center gap-3">
-        <input
-          ref={fileRef}
-          type="file"
-          accept="audio/*"
-          onChange={handleFileChange}
-          className="block w-full text-sm text-gray-500 file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-indigo-600 hover:file:bg-indigo-100"
-        />
-      </div>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="audio/*"
+        onChange={handleFileChange}
+        className="block w-full text-sm text-gray-500 file:mr-3 file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-indigo-600 hover:file:bg-indigo-100"
+      />
       {file && (
         <Button onClick={handleUpload} disabled={submitting} size="sm">
           {submitting ? "Uploading..." : error ? "Retry Upload" : "Upload & Analyze"}

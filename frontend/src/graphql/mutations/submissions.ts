@@ -11,13 +11,11 @@ export const GENERATE_PRESIGNED_URL = gql`
 
 export const CREATE_SUBMISSION = gql`
   mutation CreateSubmission(
-    $questionId: ID!
     $audioKey: String!
     $recordedAt: DateTime!
     $duration: Int
   ) {
     createSubmission(
-      questionId: $questionId
       audioKey: $audioKey
       recordedAt: $recordedAt
       duration: $duration

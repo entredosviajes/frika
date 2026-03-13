@@ -4,7 +4,6 @@ import re
 
 from celery import shared_task
 from django.conf import settings
-from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -24,48 +23,57 @@ def _get_gemini_client():
 
 
 @shared_task
-def generate_exercises_for_user(user_id: int):
-    """Generate daily exercises targeting the user's weaknesses using Gemini Flash."""
+def generate_exercises_for_mistakes(mistake_ids: list[int], user_id: int):
+    """Generate one exercise per mistake using Gemini Flash.
+
+    Each exercise is tailored to the specific error the student made.
+    """
+    from analysis.models import Mistake
     from curriculum.models import Exercise
-    from progress.models import WeaknessTracker
     from users.models import User
 
     user = User.objects.select_related("profile").get(id=user_id)
     profile = user.profile
 
-    # Don't generate if user already has pending exercises
-    if Exercise.objects.filter(user=user, is_completed=False).count() >= 4:
-        logger.info("User %s already has pending exercises", user.username)
+    mistakes = Mistake.objects.filter(id__in=mistake_ids).select_related("analysis")
+
+    # Skip mistakes that already have an exercise
+    existing = set(
+        Exercise.objects.filter(mistake__in=mistakes).values_list("mistake_id", flat=True)
+    )
+    mistakes = [m for m in mistakes if m.id not in existing]
+
+    if not mistakes:
         return
 
-    # Get top weaknesses
-    weaknesses = list(
-        WeaknessTracker.objects.filter(user=user, resolved_at__isnull=True)
-        .order_by("-error_count")[:5]
-        .values_list("tag_name", flat=True)
-    )
-
-    if not weaknesses:
-        weaknesses = ["grammar", "vocabulary"]
+    # Build a single prompt for all mistakes to minimize API calls
+    mistakes_desc = []
+    for i, m in enumerate(mistakes):
+        mistakes_desc.append(
+            f'{i + 1}. Category: {m.category}, '
+            f'Original: "{m.original_text}", '
+            f'Correction: "{m.correction}", '
+            f'Explanation: {m.explanation}'
+        )
 
     client = _get_gemini_client()
 
-    prompt = f"""You are a {profile.target_language} language coach for a {profile.proficiency_level} level student.
+    prompt = f"""You are a {profile.target_language} language coach.
 
-Generate 4 exercises targeting these weak areas: {', '.join(weaknesses)}.
+The student made the following mistakes in a speaking exercise:
 
-Return a JSON array of exactly 4 objects. Each object must have:
-- "type": one of "fill_blank", "grammar_fix", "translation", "rewrite"
-- "weakness_tag": which weak area this exercise targets (one of: {', '.join(weaknesses)})
+{chr(10).join(mistakes_desc)}
+
+For EACH mistake, generate exactly one creative exercise that targets the same linguistic concept WITHOUT copying the original sentence. The student should not be able to guess the answer just by remembering what they said.
+
+Return a JSON array of {len(mistakes)} objects (one per mistake, same order). Each object must have:
+- "type": one of "fill_blank", "grammar_fix", "translation", "rewrite" — pick the most appropriate type for the mistake
 - "content": an object with:
-  - "instruction": what the student should do
-  - "prompt": the sentence or text to work with
+  - "instruction": a clear, concise instruction (do NOT mention the original mistake or the correct answer)
+  - "prompt": a completely new sentence or text that tests the same linguistic concept (must be different from the original recording)
   - "answer": the correct answer
 
-Mix the exercise types. Each exercise must target one of the weak areas listed above.
-Make them appropriate for {profile.proficiency_level} level.
-
-Return ONLY valid JSON, no markdown fences."""
+Be creative. Use different topics, contexts, and vocabulary while testing the exact same grammar rule or vocabulary pattern."""
 
     from google.genai import types
 
@@ -83,75 +91,12 @@ Return ONLY valid JSON, no markdown fences."""
         logger.error("Failed to parse exercises from Gemini: %s", response.text)
         return
 
-    for ex in exercises_data:
+    for mistake, ex_data in zip(mistakes, exercises_data):
         Exercise.objects.create(
             user=user,
-            type=ex["type"],
-            content=ex["content"],
-            weakness_tag=ex.get("weakness_tag", ""),
+            mistake=mistake,
+            type=ex_data["type"],
+            content=ex_data["content"],
         )
 
-    logger.info("Generated %d exercises for %s", len(exercises_data), user.username)
-
-
-@shared_task
-def generate_weekly_exam(user_id: int):
-    """Generate a weekly exam based on the user's top weaknesses using Gemini Pro."""
-    from curriculum.models import Exam, ExamQuestion, Question, Topic
-    from progress.models import WeaknessTracker
-    from users.models import User
-
-    user = User.objects.select_related("profile").get(id=user_id)
-    profile = user.profile
-
-    top_weaknesses = (
-        WeaknessTracker.objects.filter(user=user, resolved_at__isnull=True)
-        .order_by("-error_count")[:5]
-        .values_list("tag_name", flat=True)
-    )
-
-    if not top_weaknesses:
-        return
-
-    client = _get_gemini_client()
-
-    prompt = f"""Generate 10 quiz questions for a {profile.target_language} learner at {profile.proficiency_level} level.
-Focus on these weak areas: {', '.join(top_weaknesses)}.
-
-Return a JSON array of objects with:
-- "text": the question text
-- "topic": a short topic label
-
-Return ONLY valid JSON, no markdown fences."""
-
-    from google.genai import types as genai_types
-
-    response = client.models.generate_content(
-        model="gemini-2.5-pro",
-        contents=prompt,
-        config=genai_types.GenerateContentConfig(
-            response_mime_type="application/json",
-        ),
-    )
-
-    try:
-        questions_data = json.loads(_clean_json_response(response.text))
-    except (json.JSONDecodeError, IndexError):
-        logger.error("Failed to parse exam questions from Gemini Pro")
-        return
-
-    now = timezone.now()
-    exam = Exam.objects.create(
-        user=user,
-        start_date=now,
-        end_date=now + timezone.timedelta(days=7),
-    )
-
-    for i, q_data in enumerate(questions_data):
-        topic, _ = Topic.objects.get_or_create(name=q_data.get("topic", "General"))
-        question = Question.objects.create(
-            topic=topic,
-            text=q_data["text"],
-            proficiency_level=profile.proficiency_level,
-        )
-        ExamQuestion.objects.create(exam=exam, question=question, order=i)
+    logger.info("Generated %d exercises for %s", len(mistakes), user.username)

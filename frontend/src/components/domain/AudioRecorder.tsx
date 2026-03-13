@@ -7,7 +7,6 @@ import { GENERATE_PRESIGNED_URL, CREATE_SUBMISSION } from "@/graphql/mutations/s
 import Button from "@/components/ui/Button";
 
 interface AudioRecorderProps {
-  questionId: number;
   onSubmissionCreated?: (submissionId: string) => void;
 }
 
@@ -18,7 +17,6 @@ function formatTime(seconds: number): string {
 }
 
 export default function AudioRecorder({
-  questionId,
   onSubmissionCreated,
 }: AudioRecorderProps) {
   const {
@@ -41,7 +39,6 @@ export default function AudioRecorder({
   const [generateUrl] = useMutation(GENERATE_PRESIGNED_URL);
   const [createSubmission, { loading: submitting }] = useMutation(CREATE_SUBMISSION);
 
-  // Waveform visualization
   const drawWaveform = useCallback(() => {
     const analyser = getAnalyserNode();
     const canvas = canvasRef.current;
@@ -107,6 +104,7 @@ export default function AudioRecorder({
         },
       });
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { url, key } = (urlData as any).generatePresignedUrl;
 
       await fetch(url, {
@@ -117,13 +115,13 @@ export default function AudioRecorder({
 
       const { data } = await createSubmission({
         variables: {
-          questionId,
           audioKey: key,
           recordedAt: new Date().toISOString(),
           duration: elapsed,
         },
       });
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       onSubmissionCreated?.((data as any).createSubmission.submission.id);
     } catch (err) {
       console.error("Upload failed:", err);

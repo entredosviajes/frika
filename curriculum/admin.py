@@ -17,7 +17,7 @@ class QuestionAdmin(admin.ModelAdmin):
 
 @admin.register(Exercise)
 class ExerciseAdmin(admin.ModelAdmin):
-    list_display = ["user", "type", "is_completed", "created_at"]
+    list_display = ["user", "mistake", "type", "is_completed", "created_at"]
     list_filter = ["type", "is_completed"]
 
 

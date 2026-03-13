@@ -6,20 +6,8 @@ export const SUBMIT_EXERCISE_ANSWER = gql`
       exercise {
         id
         userAnswer
-        content
+        feedback
         isCompleted
-      }
-    }
-  }
-`;
-
-export const SUBMIT_EXAM_ANSWER = gql`
-  mutation SubmitExamAnswer($examQuestionId: ID!, $answer: String!) {
-    submitExamAnswer(examQuestionId: $examQuestionId, answer: $answer) {
-      examQuestion {
-        id
-        userAnswer
-        score
       }
     }
   }

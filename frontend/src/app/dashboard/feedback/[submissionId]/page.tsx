@@ -3,13 +3,15 @@
 import { useParams } from "next/navigation";
 import { useQuery } from "@apollo/client/react";
 import { GET_SUBMISSION_ANALYSIS } from "@/graphql/queries/submissions";
+import { GET_MY_EXERCISES } from "@/graphql/queries/curriculum";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import MistakeHighlighter from "@/components/domain/MistakeHighlighter";
+import Link from "next/link";
 
 export default function FeedbackPage() {
   const params = useParams();
-  const submissionId = Number(params.submissionId);
+  const submissionId = params.submissionId as string;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, loading } = useQuery<any>(GET_SUBMISSION_ANALYSIS, {
@@ -17,7 +19,14 @@ export default function FeedbackPage() {
     pollInterval: 5000, // poll while processing
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: exercisesData } = useQuery<any>(GET_MY_EXERCISES, {
+    variables: { submissionId },
+    skip: !data?.submissionAnalysis,
+  });
+
   const analysis = data?.submissionAnalysis;
+  const exercises = exercisesData?.myExercises ?? [];
 
   if (loading && !analysis) {
     return <p className="text-sm text-gray-500">Loading analysis...</p>;
@@ -144,6 +153,20 @@ export default function FeedbackPage() {
             ))}
           </div>
         </Card>
+      )}
+
+      {exercises.length > 0 && (
+        <div className="text-center">
+          <Link
+            href={`/dashboard/worksheet/${submissionId}`}
+            className="inline-block rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+          >
+            Open Worksheet
+            {exercises.filter((ex: { isCompleted: boolean }) => !ex.isCompleted)
+              .length > 0 &&
+              ` (${exercises.filter((ex: { isCompleted: boolean }) => !ex.isCompleted).length} pending)`}
+          </Link>
+        </div>
       )}
     </div>
   );

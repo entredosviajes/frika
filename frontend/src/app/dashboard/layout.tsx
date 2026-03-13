@@ -7,9 +7,6 @@ import { useAuth } from "@/hooks/useAuth";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/dashboard/practice", label: "Practice" },
-  { href: "/dashboard/progress", label: "Progress" },
-  { href: "/dashboard/topics", label: "Manage Topics" },
 ];
 
 export default function DashboardLayout({

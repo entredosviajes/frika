@@ -5,7 +5,6 @@ import users.schema
 import curriculum.schema
 import submissions.schema
 import analysis.schema
-import progress.schema
 
 
 class Query(
@@ -13,7 +12,6 @@ class Query(
     curriculum.schema.Query,
     submissions.schema.Query,
     analysis.schema.Query,
-    progress.schema.Query,
     graphene.ObjectType,
 ):
     pass
