@@ -32,6 +32,8 @@ class Exercise(TimestampedModel):
     )
     type = models.CharField(max_length=20, choices=ExerciseType.choices)
     content = models.JSONField()
+    weakness_tag = models.CharField(max_length=100, blank=True)
+    user_answer = models.TextField(blank=True)
     is_completed = models.BooleanField(default=False)
 
     def __str__(self):

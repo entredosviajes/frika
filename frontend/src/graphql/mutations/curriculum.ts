@@ -1,10 +1,12 @@
 import { gql } from "@apollo/client";
 
-export const COMPLETE_EXERCISE = gql`
-  mutation CompleteExercise($exerciseId: ID!) {
-    completeExercise(exerciseId: $exerciseId) {
+export const SUBMIT_EXERCISE_ANSWER = gql`
+  mutation SubmitExerciseAnswer($exerciseId: ID!, $answer: String!) {
+    submitExerciseAnswer(exerciseId: $exerciseId, answer: $answer) {
       exercise {
         id
+        userAnswer
+        content
         isCompleted
       }
     }

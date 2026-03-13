@@ -30,6 +30,8 @@ export const GET_MY_EXERCISES = gql`
       id
       type
       content
+      weaknessTag
+      userAnswer
       isCompleted
     }
   }

@@ -47,12 +47,14 @@ Generate 4 exercises targeting these weak areas: {', '.join(weaknesses)}.
 
 Return a JSON array of exactly 4 objects. Each object must have:
 - "type": one of "fill_blank", "grammar_fix", "translation", "rewrite"
+- "weakness_tag": which weak area this exercise targets (one of: {', '.join(weaknesses)})
 - "content": an object with:
   - "instruction": what the student should do
   - "prompt": the sentence or text to work with
   - "answer": the correct answer
 
-Mix the exercise types. Make them appropriate for {profile.proficiency_level} level.
+Mix the exercise types. Each exercise must target one of the weak areas listed above.
+Make them appropriate for {profile.proficiency_level} level.
 
 Return ONLY valid JSON, no markdown fences."""
 
@@ -72,6 +74,7 @@ Return ONLY valid JSON, no markdown fences."""
             user=user,
             type=ex["type"],
             content=ex["content"],
+            weakness_tag=ex.get("weakness_tag", ""),
         )
 
     logger.info("Generated %d exercises for %s due %s", len(exercises_data), user.username, tomorrow)

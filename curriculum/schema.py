@@ -30,6 +30,8 @@ class ExerciseType(DjangoObjectType):
             "user",
             "type",
             "content",
+            "weakness_tag",
+            "user_answer",
             "is_completed",
             "created_at",
             "updated_at",
@@ -106,18 +108,20 @@ class Query(graphene.ObjectType):
         ).prefetch_related("examquestion_set__question__topic").first()
 
 
-class CompleteExercise(graphene.Mutation):
+class SubmitExerciseAnswer(graphene.Mutation):
     class Arguments:
         exercise_id = graphene.ID(required=True)
+        answer = graphene.String(required=True)
 
     exercise = graphene.Field(ExerciseType)
 
     @login_required
-    def mutate(self, info, exercise_id):
+    def mutate(self, info, exercise_id, answer):
         exercise = Exercise.objects.get(id=exercise_id, user=info.context.user)
+        exercise.user_answer = answer
         exercise.is_completed = True
-        exercise.save()
-        return CompleteExercise(exercise=exercise)
+        exercise.save(update_fields=["user_answer", "is_completed"])
+        return SubmitExerciseAnswer(exercise=exercise)
 
 
 class SubmitExamAnswer(graphene.Mutation):
@@ -180,7 +184,7 @@ class CreateQuestion(graphene.Mutation):
 
 
 class Mutation(graphene.ObjectType):
-    complete_exercise = CompleteExercise.Field()
+    submit_exercise_answer = SubmitExerciseAnswer.Field()
     submit_exam_answer = SubmitExamAnswer.Field()
     create_topic = CreateTopic.Field()
     delete_topic = DeleteTopic.Field()
