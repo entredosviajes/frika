@@ -55,20 +55,22 @@ export default function DashboardPage() {
             Today&apos;s Exercises
           </h2>
           {exercises.length === 0 ? (
-            <p className="text-sm text-gray-500">No exercises for today.</p>
+            <p className="text-sm text-gray-500">No pending exercises.</p>
           ) : (
             <ul className="space-y-2">
               {exercises.map((ex: { id: string; type: string; isCompleted: boolean }) => (
-                <li
-                  key={ex.id}
-                  className="flex items-center justify-between rounded-md border border-gray-100 px-3 py-2"
-                >
-                  <span className="text-sm capitalize text-gray-700">
-                    {ex.type.replace("_", " ")}
-                  </span>
-                  <Badge variant={ex.isCompleted ? "tone" : "default"}>
-                    {ex.isCompleted ? "Done" : "Pending"}
-                  </Badge>
+                <li key={ex.id}>
+                  <Link
+                    href={`/dashboard/exercises/${ex.id}`}
+                    className="flex items-center justify-between rounded-md border border-gray-100 px-3 py-2 hover:bg-gray-50"
+                  >
+                    <span className="text-sm capitalize text-gray-700">
+                      {ex.type.replace("_", " ")}
+                    </span>
+                    <Badge variant={ex.isCompleted ? "tone" : "default"}>
+                      {ex.isCompleted ? "Done" : "Pending"}
+                    </Badge>
+                  </Link>
                 </li>
               ))}
             </ul>
