@@ -3,6 +3,7 @@ type BadgeVariant =
   | "vocabulary"
   | "pronunciation"
   | "tone"
+  | "style"
   | "minor"
   | "major"
   | "default";
@@ -18,6 +19,7 @@ const variantStyles: Record<BadgeVariant, string> = {
   vocabulary: "bg-purple-100 text-purple-800",
   pronunciation: "bg-orange-100 text-orange-800",
   tone: "bg-green-100 text-green-800",
+  style: "bg-teal-100 text-teal-800",
   minor: "bg-yellow-100 text-yellow-800",
   major: "bg-red-100 text-red-800",
   default: "bg-gray-100 text-gray-800",

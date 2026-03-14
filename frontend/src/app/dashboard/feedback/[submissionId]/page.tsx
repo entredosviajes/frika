@@ -8,15 +8,17 @@ import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import MistakeHighlighter from "@/components/domain/MistakeHighlighter";
 import Link from "next/link";
+import { useTranslation } from "@/i18n/I18nProvider";
 
 export default function FeedbackPage() {
+  const { t } = useTranslation();
   const params = useParams();
   const submissionId = params.submissionId as string;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, loading } = useQuery<any>(GET_SUBMISSION_ANALYSIS, {
     variables: { submissionId },
-    pollInterval: 5000, // poll while processing
+    pollInterval: 5000,
   });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -29,7 +31,7 @@ export default function FeedbackPage() {
   const exercises = exercisesData?.myExercises ?? [];
 
   if (loading && !analysis) {
-    return <p className="text-sm text-gray-500">Loading analysis...</p>;
+    return <p className="text-sm text-gray-500">{t("feedback.loading")}</p>;
   }
 
   if (!analysis) {
@@ -38,10 +40,10 @@ export default function FeedbackPage() {
         <div className="text-center py-8">
           <div className="mb-2 text-2xl">&#9881;&#65039;</div>
           <p className="text-gray-600">
-            Your recording is being analyzed. This usually takes a minute.
+            {t("feedback.analyzing")}
           </p>
           <p className="mt-1 text-sm text-gray-400">
-            This page will update automatically.
+            {t("feedback.autoUpdate")}
           </p>
         </div>
       </Card>
@@ -57,12 +59,12 @@ export default function FeedbackPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Your Feedback</h1>
+      <h1 className="text-2xl font-bold text-gray-900">{t("feedback.title")}</h1>
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-gray-500">
-            Your Transcript
+            {t("feedback.transcript")}
           </h2>
           <MistakeHighlighter
             transcript={analysis.rawTranscript}
@@ -72,7 +74,7 @@ export default function FeedbackPage() {
 
         <Card>
           <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-gray-500">
-            Improved Version
+            {t("feedback.improved")}
           </h2>
           <p className="text-gray-700 leading-relaxed">
             {analysis.rewrittenVersion}
@@ -82,7 +84,7 @@ export default function FeedbackPage() {
 
       <Card>
         <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-gray-500">
-          General Feedback
+          {t("feedback.general")}
         </h2>
         <p className="text-gray-700">{analysis.generalFeedback}</p>
       </Card>
@@ -90,7 +92,7 @@ export default function FeedbackPage() {
       {Object.keys(mistakesByCategory).length > 0 && (
         <Card>
           <h2 className="mb-4 text-sm font-medium uppercase tracking-wide text-gray-500">
-            Mistakes Breakdown
+            {t("feedback.breakdown")}
           </h2>
           <div className="space-y-4">
             {Object.entries(mistakesByCategory).map(([category, items]) => (
@@ -103,12 +105,15 @@ export default function FeedbackPage() {
                         | "vocabulary"
                         | "pronunciation"
                         | "tone"
+                        | "style"
                     }
                   >
                     {category}
                   </Badge>
                   <span className="text-gray-400">
-                    ({items.length} issue{items.length !== 1 ? "s" : ""})
+                    ({items.length === 1
+                      ? t("feedback.issues", { count: items.length })
+                      : t("feedback.issuesPlural", { count: items.length })})
                   </span>
                 </h3>
                 <ul className="space-y-2">
@@ -161,10 +166,10 @@ export default function FeedbackPage() {
             href={`/dashboard/worksheet/${submissionId}`}
             className="inline-block rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
           >
-            Open Worksheet
+            {t("feedback.openWorksheet")}
             {exercises.filter((ex: { isCompleted: boolean }) => !ex.isCompleted)
               .length > 0 &&
-              ` (${exercises.filter((ex: { isCompleted: boolean }) => !ex.isCompleted).length} pending)`}
+              ` (${t("dashboard.pending", { count: exercises.filter((ex: { isCompleted: boolean }) => !ex.isCompleted).length })})`}
           </Link>
         </div>
       )}

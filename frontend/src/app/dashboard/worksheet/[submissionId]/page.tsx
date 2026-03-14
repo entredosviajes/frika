@@ -8,8 +8,10 @@ import { SUBMIT_EXERCISE_ANSWER } from "@/graphql/mutations/curriculum";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import { useState } from "react";
+import { useTranslation } from "@/i18n/I18nProvider";
 
 export default function WorksheetPage() {
+  const { t } = useTranslation();
   const params = useParams();
   const submissionId = params.submissionId as string;
 
@@ -41,14 +43,14 @@ export default function WorksheetPage() {
   const mistakes = analysis?.mistakes ?? [];
 
   if (analysisLoading || exercisesLoading) {
-    return <p className="text-sm text-gray-500">Loading worksheet...</p>;
+    return <p className="text-sm text-gray-500">{t("worksheet.loading")}</p>;
   }
 
   if (!analysis) {
     return (
       <Card>
         <p className="text-center text-gray-500 py-8">
-          Analysis is still processing. This page will show your worksheet once ready.
+          {t("worksheet.processing")}
         </p>
       </Card>
     );
@@ -64,20 +66,20 @@ export default function WorksheetPage() {
     <div className="mx-auto max-w-3xl space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">
-          Today&apos;s Worksheet
+          {t("worksheet.title")}
         </h1>
         <p className="mt-1 text-sm text-gray-500">
-          Review your mistakes, then practice with the exercises below.
+          {t("worksheet.subtitle")}
         </p>
       </div>
 
       {/* Mistakes summary */}
       <Card>
         <h2 className="mb-4 text-sm font-medium uppercase tracking-wide text-gray-500">
-          Mistakes from your recording
+          {t("worksheet.mistakes")}
         </h2>
         {mistakes.length === 0 ? (
-          <p className="text-sm text-gray-500">No mistakes found!</p>
+          <p className="text-sm text-gray-500">{t("worksheet.noMistakes")}</p>
         ) : (
           <div className="space-y-3">
             {mistakes.map(
@@ -110,6 +112,7 @@ export default function WorksheetPage() {
                           | "vocabulary"
                           | "pronunciation"
                           | "tone"
+                          | "style"
                       }
                     >
                       {m.category}
@@ -126,7 +129,7 @@ export default function WorksheetPage() {
       {/* Exercises */}
       {exercises.length > 0 && (
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">Exercises</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t("worksheet.exercises")}</h2>
           {exercises.map(
             (ex: {
               id: string;
@@ -153,7 +156,7 @@ export default function WorksheetPage() {
                       </p>
                     </div>
                     {ex.isCompleted && (
-                      <Badge variant="tone">Done</Badge>
+                      <Badge variant="tone">{t("worksheet.done")}</Badge>
                     )}
                   </div>
 
@@ -173,21 +176,21 @@ export default function WorksheetPage() {
                         }
                         className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                         rows={2}
-                        placeholder="Type your answer..."
+                        placeholder={t("worksheet.placeholder")}
                       />
                       <button
                         onClick={() => handleSubmit(ex.id)}
                         disabled={submitting || !answers[ex.id]?.trim()}
                         className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
                       >
-                        {submitting ? "Checking..." : "Submit"}
+                        {submitting ? t("worksheet.checking") : t("worksheet.submit")}
                       </button>
                     </div>
                   ) : (
                     <div className="mt-3 space-y-2">
                       <div className="rounded-md border border-gray-100 bg-gray-50 px-3 py-2">
                         <p className="text-xs font-medium text-gray-400">
-                          Your answer
+                          {t("worksheet.yourAnswer")}
                         </p>
                         <p className="text-sm text-gray-700">
                           {ex.userAnswer}
@@ -195,7 +198,7 @@ export default function WorksheetPage() {
                       </div>
                       <div className="rounded-md border border-indigo-100 bg-indigo-50 px-3 py-2">
                         <p className="text-xs font-medium text-indigo-400">
-                          Feedback
+                          {t("worksheet.feedback")}
                         </p>
                         <p className="text-sm text-gray-700">{ex.feedback}</p>
                       </div>

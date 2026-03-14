@@ -12,8 +12,11 @@ import { RETRY_SUBMISSION } from "@/graphql/mutations/submissions";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Link from "next/link";
+import { useTranslation } from "@/i18n/I18nProvider";
+import { LANGUAGE_NAMES, type Locale } from "@/i18n/translations";
 
 export default function DashboardPage() {
+  const { t, locale } = useTranslation();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: meData } = useQuery<any>(ME_QUERY);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -53,15 +56,18 @@ export default function DashboardPage() {
     (ex: { isCompleted: boolean }) => !ex.isCompleted
   );
 
+  const targetLangCode = user?.profile?.targetLanguage?.toLowerCase() ?? "";
+  const targetLangName = LANGUAGE_NAMES[targetLangCode]?.[locale] ?? targetLangCode;
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">
-          Welcome back{user ? `, ${user.username}` : ""}
+          {t("dashboard.welcome")}{user ? `, ${user.username}` : ""}
         </h1>
         {user?.profile && (
           <p className="text-sm text-gray-500">
-            Learning {user.profile.targetLanguage}
+            {t("dashboard.learning", { language: targetLangName })}
           </p>
         )}
       </div>
@@ -69,14 +75,15 @@ export default function DashboardPage() {
       {/* Today's Recording */}
       <Card>
         <h2 className="mb-4 text-lg font-semibold text-gray-900">
-          Today&apos;s Recording
+          {t("dashboard.todayRecording")}
         </h2>
         {todaySub ? (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <p className="text-sm text-gray-500">
-                Recorded at{" "}
-                {new Date(todaySub.recordedAt).toLocaleTimeString()}
+                {t("dashboard.recordedAt", {
+                  time: new Date(todaySub.recordedAt).toLocaleTimeString(),
+                })}
               </p>
               <Badge variant={todayStatus === "completed" ? "tone" : "default"}>
                 {todayStatus}
@@ -87,7 +94,7 @@ export default function DashboardPage() {
               <div className="space-y-3 rounded-md border border-gray-100 bg-gray-50 p-4">
                 <div>
                   <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
-                    Transcript
+                    {t("dashboard.transcript")}
                   </p>
                   <p className="text-sm text-gray-700">
                     {analysis.rawTranscript}
@@ -95,7 +102,7 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
-                    Feedback
+                    {t("dashboard.feedback")}
                   </p>
                   <p className="text-sm text-gray-700">
                     {analysis.generalFeedback}
@@ -106,16 +113,16 @@ export default function DashboardPage() {
                     href={`/dashboard/feedback/${todaySub.id}`}
                     className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
                   >
-                    View full analysis
+                    {t("dashboard.viewAnalysis")}
                   </Link>
                   {exercises.length > 0 && (
                     <Link
                       href={`/dashboard/worksheet/${todaySub.id}`}
                       className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
                     >
-                      Open worksheet
+                      {t("dashboard.openWorksheet")}
                       {pendingExercises.length > 0 &&
-                        ` (${pendingExercises.length} pending)`}
+                        ` (${t("dashboard.pending", { count: pendingExercises.length })})`}
                     </Link>
                   )}
                 </div>
@@ -124,14 +131,14 @@ export default function DashboardPage() {
 
             {todayStatus === "processing" && (
               <p className="text-sm text-gray-500">
-                Your recording is being analyzed...
+                {t("dashboard.analyzing")}
               </p>
             )}
 
             {todayStatus === "failed" && (
               <div className="flex items-center gap-3 rounded-md border border-red-100 bg-red-50 p-3">
                 <p className="text-sm text-red-700">
-                  Analysis failed. This is usually a temporary issue.
+                  {t("dashboard.failed")}
                 </p>
                 <button
                   onClick={() =>
@@ -142,7 +149,7 @@ export default function DashboardPage() {
                   disabled={retrying}
                   className="shrink-0 rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
                 >
-                  {retrying ? "Retrying..." : "Retry"}
+                  {retrying ? t("dashboard.retrying") : t("dashboard.retry")}
                 </button>
               </div>
             )}
@@ -152,20 +159,19 @@ export default function DashboardPage() {
               href="/dashboard/record"
               className="inline-block text-sm font-medium text-gray-500 hover:text-gray-700"
             >
-              Record again
+              {t("dashboard.recordAgain")}
             </Link>
           </div>
         ) : (
           <div className="space-y-4">
             <p className="text-sm text-gray-500">
-              You haven&apos;t recorded anything today. Talk about whatever is
-              on your mind!
+              {t("dashboard.noRecording")}
             </p>
             <Link
               href="/dashboard/record"
               className="inline-block rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
             >
-              Record or Upload Audio
+              {t("dashboard.recordOrUpload")}
             </Link>
           </div>
         )}
@@ -176,19 +182,22 @@ export default function DashboardPage() {
         <Card>
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900">
-              Today&apos;s Worksheet
+              {t("dashboard.todayWorksheet")}
             </h2>
             <Link
               href={`/dashboard/worksheet/${todaySub.id}`}
               className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
             >
-              Open
+              {t("dashboard.open")}
             </Link>
           </div>
           <p className="mt-2 text-sm text-gray-500">
             {pendingExercises.length === 0
-              ? "All exercises completed!"
-              : `${pendingExercises.length} of ${exercises.length} exercises remaining`}
+              ? t("dashboard.allCompleted")
+              : t("dashboard.exercisesRemaining", {
+                  pending: pendingExercises.length,
+                  total: exercises.length,
+                })}
           </p>
         </Card>
       )}
@@ -197,7 +206,7 @@ export default function DashboardPage() {
       {submissions.length > 1 && (
         <details className="group">
           <summary className="cursor-pointer text-sm font-medium text-gray-400 hover:text-gray-600">
-            Past recordings ({submissions.length})
+            {t("dashboard.pastRecordings", { count: submissions.length })}
           </summary>
           <ul className="mt-3 space-y-1">
             {submissions

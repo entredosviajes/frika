@@ -28,6 +28,7 @@ class Mistake(TimestampedModel):
         VOCABULARY = "vocabulary", "Vocabulary"
         PRONUNCIATION = "pronunciation", "Pronunciation"
         TONE = "tone", "Tone"
+        STYLE = "style", "Style"
 
     class Severity(models.TextChoices):
         MINOR = "minor", "Minor"

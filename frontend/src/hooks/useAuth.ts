@@ -38,9 +38,10 @@ export function useAuth() {
       email: string,
       password: string,
       targetLanguage: string,
+      sourceLanguage?: string,
     ) => {
       const { data } = await registerMutation({
-        variables: { username, email, password, targetLanguage },
+        variables: { username, email, password, targetLanguage, sourceLanguage },
       });
       // Auto-login after registration
       const { data: loginData } = await loginMutation({

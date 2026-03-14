@@ -9,23 +9,32 @@ class User(AbstractUser):
 
 
 class LearnerProfile(TimestampedModel):
-    class ProficiencyLevel(models.TextChoices):
-        A1 = "A1", "Beginner"
-        A2 = "A2", "Elementary"
-        B1 = "B1", "Intermediate"
-        B2 = "B2", "Upper Intermediate"
-        C1 = "C1", "Advanced"
-        C2 = "C2", "Proficiency"
+    class SourceLanguage(models.TextChoices):
+        EN = "en", "English"
+        FR = "fr", "French"
+        AR = "ar", "Arabic"
+        ES = "es", "Spanish"
+
+    class TargetLanguage(models.TextChoices):
+        EN = "en", "English"
+        FR = "fr", "French"
+        AR = "ar", "Arabic"
+        ES = "es", "Spanish"
+        IT = "it", "Italian"
+        DE = "de", "German"
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
-    target_language = models.CharField(max_length=50)
-    proficiency_level = models.CharField(
-        max_length=2,
-        choices=ProficiencyLevel.choices,
-        default=ProficiencyLevel.A1,
+    target_language = models.CharField(
+        max_length=10,
+        choices=TargetLanguage.choices,
+        default=TargetLanguage.EN,
     )
-    daily_streak = models.PositiveIntegerField(default=0)
+    source_language = models.CharField(
+        max_length=10,
+        choices=SourceLanguage.choices,
+        default=SourceLanguage.EN,
+    )
     timezone = models.CharField(max_length=50, default="UTC")
 
     def __str__(self):
-        return f"{self.user.username} - {self.target_language} ({self.proficiency_level})"
+        return f"{self.user.username} - {self.target_language}"

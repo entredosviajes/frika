@@ -116,7 +116,7 @@ Analyze this transcript and return a JSON object with:
    - "original_text": the segment containing the error
    - "correction": the corrected version
    - "explanation": why this is wrong and how to fix it
-   - "category": one of "grammar", "vocabulary", "pronunciation", "tone"
+   - "category": one of "grammar", "vocabulary", "pronunciation", "tone", "style" (STRICTLY use only these values)
    - "severity": one of "minor", "major"
 
 Return ONLY valid JSON, no markdown fences."""

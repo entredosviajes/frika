@@ -8,7 +8,7 @@ interface Mistake {
   originalText: string;
   correction: string;
   explanation: string;
-  category: "grammar" | "vocabulary" | "pronunciation" | "tone";
+  category: "grammar" | "vocabulary" | "pronunciation" | "tone" | "style";
   severity: "minor" | "major";
 }
 
@@ -22,6 +22,7 @@ const categoryColors: Record<string, string> = {
   vocabulary: "bg-purple-200/60 border-b-2 border-purple-400",
   pronunciation: "bg-orange-200/60 border-b-2 border-orange-400",
   tone: "bg-green-200/60 border-b-2 border-green-400",
+  style: "bg-teal-200/60 border-b-2 border-teal-400",
 };
 
 export default function MistakeHighlighter({

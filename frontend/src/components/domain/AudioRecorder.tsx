@@ -5,6 +5,7 @@ import { useMutation } from "@apollo/client/react";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { GENERATE_PRESIGNED_URL, CREATE_SUBMISSION } from "@/graphql/mutations/submissions";
 import Button from "@/components/ui/Button";
+import { useTranslation } from "@/i18n/I18nProvider";
 
 interface AudioRecorderProps {
   onSubmissionCreated?: (submissionId: string) => void;
@@ -19,6 +20,7 @@ function formatTime(seconds: number): string {
 export default function AudioRecorder({
   onSubmissionCreated,
 }: AudioRecorderProps) {
+  const { t } = useTranslation();
   const {
     state,
     elapsed,
@@ -125,7 +127,7 @@ export default function AudioRecorder({
       onSubmissionCreated?.((data as any).createSubmission.submission.id);
     } catch (err) {
       console.error("Upload failed:", err);
-      setUploadError("Upload failed. Please try again.");
+      setUploadError(t("recorder.uploadFailed"));
     }
   };
 
@@ -150,26 +152,26 @@ export default function AudioRecorder({
       <div className="flex gap-3">
         {state === "idle" && (
           <Button onClick={startRecording} size="lg">
-            Start Recording
+            {t("recorder.start")}
           </Button>
         )}
 
         {state === "recording" && (
           <>
             <Button onClick={pauseRecording} variant="secondary">
-              Pause
+              {t("recorder.pause")}
             </Button>
             <Button onClick={stopRecording} variant="danger">
-              Stop
+              {t("recorder.stop")}
             </Button>
           </>
         )}
 
         {state === "paused" && (
           <>
-            <Button onClick={resumeRecording}>Resume</Button>
+            <Button onClick={resumeRecording}>{t("recorder.resume")}</Button>
             <Button onClick={stopRecording} variant="danger">
-              Stop
+              {t("recorder.stop")}
             </Button>
           </>
         )}
@@ -177,17 +179,17 @@ export default function AudioRecorder({
         {state === "completed" && (
           <>
             <Button onClick={handleUpload} disabled={submitting} size="lg">
-              {submitting ? "Uploading..." : uploadError ? "Retry Upload" : "Submit Recording"}
+              {submitting ? t("recorder.uploading") : uploadError ? t("recorder.retryUpload") : t("recorder.submit")}
             </Button>
             <Button onClick={reset} variant="ghost">
-              Record Again
+              {t("recorder.recordAgain")}
             </Button>
           </>
         )}
 
         {state === "error" && (
           <Button onClick={reset} variant="secondary">
-            Try Again
+            {t("recorder.tryAgain")}
           </Button>
         )}
       </div>

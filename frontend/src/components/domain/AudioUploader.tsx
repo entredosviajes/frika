@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useMutation } from "@apollo/client/react";
 import { GENERATE_PRESIGNED_URL, CREATE_SUBMISSION } from "@/graphql/mutations/submissions";
 import Button from "@/components/ui/Button";
+import { useTranslation } from "@/i18n/I18nProvider";
 
 interface AudioUploaderProps {
   onSubmissionCreated?: (submissionId: string) => void;
@@ -12,6 +13,7 @@ interface AudioUploaderProps {
 export default function AudioUploader({
   onSubmissionCreated,
 }: AudioUploaderProps) {
+  const { t } = useTranslation();
   const fileRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -55,14 +57,14 @@ export default function AudioUploader({
       onSubmissionCreated?.((data as any).createSubmission.submission.id);
     } catch (err) {
       console.error("Upload failed:", err);
-      setError("Upload failed. Please try again.");
+      setError(t("uploader.failed"));
     }
   };
 
   return (
     <div className="space-y-3">
       <p className="text-sm font-medium text-gray-700">
-        Or upload an audio file
+        {t("uploader.label")}
       </p>
       <input
         ref={fileRef}
@@ -73,7 +75,7 @@ export default function AudioUploader({
       />
       {file && (
         <Button onClick={handleUpload} disabled={submitting} size="sm">
-          {submitting ? "Uploading..." : error ? "Retry Upload" : "Upload & Analyze"}
+          {submitting ? t("uploader.uploading") : error ? t("uploader.retryUpload") : t("uploader.submit")}
         </Button>
       )}
       {error && <p className="text-sm text-red-600">{error}</p>}
